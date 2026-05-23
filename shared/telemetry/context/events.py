@@ -14,8 +14,8 @@ class TelemetryEventNames:
     """Standardized event names for OpenTelemetry tracking (success and errors)."""
 
     # Error events
-    BOT_NOT_FOUND = "BotNotFound"
-    TEAM_NOT_FOUND = "TeamNotFound"
+    AGENT_PROFILE_NOT_FOUND = "AgentProfileNotFound"
+    WORKFLOW_NOT_FOUND = "WorkflowNotFound"
     CONFIG_BUILD_FAILED = "ConfigBuildFailed"
     PROVIDER_CREATION_FAILED = "ProviderCreationFailed"
     STREAM_CHUNK_ERROR = "StreamChunkError"

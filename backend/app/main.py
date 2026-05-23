@@ -15,7 +15,9 @@ async def lifespan(app: FastAPI):
 
 
 def create_app() -> FastAPI:
-    openapi_url = f"{settings.API_PREFIX}/openapi.json" if settings.ENABLE_API_DOCS else None
+    openapi_url = (
+        f"{settings.API_PREFIX}/openapi.json" if settings.ENABLE_API_DOCS else None
+    )
     docs_url = f"{settings.API_PREFIX}/docs" if settings.ENABLE_API_DOCS else None
 
     app = FastAPI(

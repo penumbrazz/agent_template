@@ -64,7 +64,7 @@ def __getattr__(name: str):
         "record_stream_error",
         "restore_context_vars",
         "set_agent_context",
-        "set_bot_context",
+        "set_agent_profile_context",
         "set_model_context",
         "set_repository_context",
         "set_request_context",
@@ -72,7 +72,7 @@ def __getattr__(name: str):
         "set_span_error",
         "set_span_ok",
         "set_task_context",
-        "set_team_context",
+        "set_workflow_context",
         "set_user_context",
         "set_websocket_context",
     )
@@ -114,8 +114,8 @@ __all__ = [
     # Context setters
     "set_user_context",
     "set_task_context",
-    "set_team_context",
-    "set_bot_context",
+    "set_workflow_context",
+    "set_agent_profile_context",
     "set_model_context",
     "set_agent_context",
     "set_request_context",

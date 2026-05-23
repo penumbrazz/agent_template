@@ -199,7 +199,7 @@ class SpanManager:
         Record an error in the span with detailed context.
 
         Args:
-            error_type: Type of error (e.g., "BotNotFound", "StreamChunkError")
+            error_type: Type of error (for example, "AgentProfileNotFound")
             error_message: Error message
             model_config: Optional model configuration for additional context
 

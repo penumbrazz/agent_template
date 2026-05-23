@@ -10,8 +10,8 @@ Provides pre-defined business metrics and decorators for automatic metric collec
 
 # Business metrics
 from shared.telemetry.metrics.business import (
-    Agent TemplateMetrics,
-    get_agent-template_metrics,
+    AgentTemplateMetrics,
+    get_agent_template_metrics,
     record_message_sent,
     record_model_call,
     record_session_active_change,
@@ -27,8 +27,8 @@ from shared.telemetry.metrics.decorators import track_duration, track_metric
 
 __all__ = [
     # Business metrics
-    "Agent TemplateMetrics",
-    "get_agent-template_metrics",
+    "AgentTemplateMetrics",
+    "get_agent_template_metrics",
     "record_session_opened",
     "record_session_active_change",
     "record_message_sent",

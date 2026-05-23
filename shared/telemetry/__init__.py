@@ -22,7 +22,7 @@ Directory Structure:
     │   └── propagation.py   # Trace context propagation
     └── metrics/
         ├── __init__.py      # Metrics exports
-        ├── business.py      # Business metrics (Agent TemplateMetrics)
+        ├── business.py      # Business metrics (AgentTemplateMetrics)
         └── decorators.py    # Metric tracking decorators
     ├── decorators.py        # Tracing decorators for functions/methods
 

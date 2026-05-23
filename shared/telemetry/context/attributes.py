@@ -21,13 +21,13 @@ class SpanAttributes:
     TASK_ID = "task.id"
     SUBTASK_ID = "subtask.id"
 
-    # Team attributes
-    TEAM_ID = "team.id"
-    TEAM_NAME = "team.name"
+    # Workflow attributes
+    WORKFLOW_ID = "workflow.id"
+    WORKFLOW_NAME = "workflow.name"
 
-    # Bot attributes
-    BOT_ID = "bot.id"
-    BOT_NAME = "bot.name"
+    # Agent profile attributes
+    AGENT_PROFILE_ID = "agent_profile.id"
+    AGENT_PROFILE_NAME = "agent_profile.name"
 
     # Model attributes
     MODEL_NAME = "model.name"
@@ -67,7 +67,7 @@ class SpanAttributes:
     # MCP attributes
     MCP_SERVERS_COUNT = "mcp.servers.count"
     MCP_SERVER_NAMES = "mcp.server.names"
-    MCP_BOT_SERVERS_COUNT = "mcp.bot_servers.count"
+    MCP_AGENT_PROFILE_SERVERS_COUNT = "mcp.agent_profile_servers.count"
 
     # Skill attributes
     SKILL_NAMES = "skill.names"

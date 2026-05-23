@@ -131,3 +131,24 @@ Route (app)                                 Size  First Load JS
 1. **shared 包构建问题**：最初使用 hatchling 构建后端，editable 安装后 `import shared` 失败。改用 setuptools + `[tool.setuptools.package-dir]` 配置 `shared = "."`，解决了包发现问题。
 2. **useTraceAction.ts 业务耦合**：源文件引用了 `UserContext` 和 `TaskContext` 等 Wegent 业务模块。重写为不含业务上下文的轻量版本。
 3. **Frontend TelemetryInit**：源版本包含 Wegent 品牌。重写为通用版本，通过 runtime config 控制 OTel 初始化。
+
+---
+
+## Codex 复查补丁
+
+Codex 独立复查后发现并修复了两类问题：
+
+1. **Python 标识符被全局替换破坏**：`Agent TemplateMetrics`、`get_agent-template_metrics()` 不是合法 Python 标识符。已改为 `AgentTemplateMetrics`、`get_agent_template_metrics()`，并新增 shared 测试覆盖 metrics 导入。
+2. **遥测上下文残留旧概念**：`team` / `bot` 上下文已改为 `workflow` / `agent_profile`，相关事件和属性常量同步改名。
+3. **脚本自包含性**：`scripts/format.sh` 改为在 `shared` 和 `backend` 内通过 `uv run black/isort` 执行；`scripts/test.sh` 对前端测试增加 `--passWithNoTests`，避免第一批暂无 Jest 测试时失败。
+4. **Jest 构建产物扫描噪音**：新增 `frontend/jest.config.js` 忽略 `.next` 和 `node_modules`，避免 `next build` 后 Jest 扫描 `.next/standalone` 产生 package name collision。
+
+复查补丁后的验证：
+
+```text
+shared: uv run pytest -> 2 passed
+backend: uv run pytest -> 2 passed
+frontend: npm run build -> build succeeded
+python syntax: py_compile shared/backend source files -> passed
+docker compose: Docker daemon 未运行，无法连接 unix socket
+```

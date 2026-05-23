@@ -10,4 +10,4 @@ cd "$ROOT_DIR/backend"
 uv run pytest
 
 cd "$ROOT_DIR/frontend"
-npm test -- --watch=false
+npm test -- --watch=false --passWithNoTests

@@ -9,3 +9,14 @@ def test_otel_config_is_disabled_by_default(monkeypatch):
 
     assert config.enabled is False
     assert config.service_name == "agent-template-test"
+
+
+def test_business_metrics_exports_use_valid_identifiers():
+    from shared.telemetry.metrics import (
+        AgentTemplateMetrics,
+        get_agent_template_metrics,
+    )
+
+    metrics = get_agent_template_metrics()
+
+    assert isinstance(metrics, AgentTemplateMetrics)

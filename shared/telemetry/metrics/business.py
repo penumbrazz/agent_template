@@ -19,16 +19,16 @@ from shared.telemetry.core import get_meter, is_telemetry_enabled
 logger = logging.getLogger(__name__)
 
 
-class Agent TemplateMetrics:
+class AgentTemplateMetrics:
     """
     Pre-defined business metrics for Agent Template services.
     All metrics are lazily initialized on first access.
     """
 
-    _instance: Optional["Agent TemplateMetrics"] = None
+    _instance: Optional["AgentTemplateMetrics"] = None
     _initialized: bool = False
 
-    def __new__(cls) -> "Agent TemplateMetrics":
+    def __new__(cls) -> "AgentTemplateMetrics":
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
@@ -175,25 +175,25 @@ class Agent TemplateMetrics:
         )
 
 
-def get_agent-template_metrics() -> Agent TemplateMetrics:
+def get_agent_template_metrics() -> AgentTemplateMetrics:
     """
-    Get the singleton Agent TemplateMetrics instance.
+    Get the singleton AgentTemplateMetrics instance.
 
     Returns:
-        Agent TemplateMetrics: The metrics instance
+        AgentTemplateMetrics: The metrics instance
     """
-    return Agent TemplateMetrics()
+    return AgentTemplateMetrics()
 
 
 def record_session_opened(
-    user_id: Optional[str] = None, team_id: Optional[str] = None
+    user_id: Optional[str] = None, workflow_id: Optional[str] = None
 ) -> None:
     """
     Record a session opened event.
 
     Args:
         user_id: Optional user identifier
-        team_id: Optional team identifier
+        workflow_id: Optional workflow identifier
     """
     if not is_telemetry_enabled():
         return
@@ -202,10 +202,10 @@ def record_session_opened(
         attributes = {}
         if user_id:
             attributes["user_id"] = user_id
-        if team_id:
-            attributes["team_id"] = team_id
+        if workflow_id:
+            attributes["workflow_id"] = workflow_id
 
-        get_agent-template_metrics().session_opened.add(1, attributes)
+        get_agent_template_metrics().session_opened.add(1, attributes)
     except Exception as e:
         logger.debug(f"Failed to record session opened metric: {e}")
 
@@ -221,15 +221,15 @@ def record_session_active_change(delta: int) -> None:
         return
 
     try:
-        get_agent-template_metrics().session_active.add(delta)
+        get_agent_template_metrics().session_active.add(delta)
     except Exception as e:
         logger.debug(f"Failed to record session active metric: {e}")
 
 
 def record_message_sent(
     user_id: Optional[str] = None,
-    team_id: Optional[str] = None,
-    bot_id: Optional[str] = None,
+    workflow_id: Optional[str] = None,
+    agent_profile_id: Optional[str] = None,
     message_type: Optional[str] = None,
 ) -> None:
     """
@@ -237,24 +237,24 @@ def record_message_sent(
 
     Args:
         user_id: Optional user identifier
-        team_id: Optional team identifier
-        bot_id: Optional bot identifier
+        workflow_id: Optional workflow identifier
+        agent_profile_id: Optional agent profile identifier
         message_type: Optional message type (e.g., "text", "code", "image")
     """
     if not is_telemetry_enabled():
         return
 
     try:
-        metrics = get_agent-template_metrics()
+        metrics = get_agent_template_metrics()
 
         # Record message sent
         attributes = {}
         if user_id:
             attributes["user_id"] = user_id
-        if team_id:
-            attributes["team_id"] = team_id
-        if bot_id:
-            attributes["bot_id"] = bot_id
+        if workflow_id:
+            attributes["workflow_id"] = workflow_id
+        if agent_profile_id:
+            attributes["agent_profile_id"] = agent_profile_id
 
         metrics.message_sent.add(1, attributes)
 
@@ -267,14 +267,14 @@ def record_message_sent(
 
 
 def record_task_created(
-    user_id: Optional[str] = None, team_id: Optional[str] = None
+    user_id: Optional[str] = None, workflow_id: Optional[str] = None
 ) -> None:
     """
     Record a task created event.
 
     Args:
         user_id: Optional user identifier
-        team_id: Optional team identifier
+        workflow_id: Optional workflow identifier
     """
     if not is_telemetry_enabled():
         return
@@ -283,17 +283,17 @@ def record_task_created(
         attributes = {}
         if user_id:
             attributes["user_id"] = user_id
-        if team_id:
-            attributes["team_id"] = team_id
+        if workflow_id:
+            attributes["workflow_id"] = workflow_id
 
-        get_agent-template_metrics().task_created.add(1, attributes)
+        get_agent_template_metrics().task_created.add(1, attributes)
     except Exception as e:
         logger.debug(f"Failed to record task created metric: {e}")
 
 
 def record_task_completed(
     user_id: Optional[str] = None,
-    team_id: Optional[str] = None,
+    workflow_id: Optional[str] = None,
     agent_type: Optional[str] = None,
     duration_ms: Optional[float] = None,
 ) -> None:
@@ -302,21 +302,21 @@ def record_task_completed(
 
     Args:
         user_id: Optional user identifier
-        team_id: Optional team identifier
-        agent_type: Optional agent type (e.g., "ClaudeCode", "Agno", "Dify")
+        workflow_id: Optional workflow identifier
+        agent_type: Optional agent type (for example, "chat", "research", "coding")
         duration_ms: Optional task duration in milliseconds
     """
     if not is_telemetry_enabled():
         return
 
     try:
-        metrics = get_agent-template_metrics()
+        metrics = get_agent_template_metrics()
 
         attributes = {}
         if user_id:
             attributes["user_id"] = user_id
-        if team_id:
-            attributes["team_id"] = team_id
+        if workflow_id:
+            attributes["workflow_id"] = workflow_id
         if agent_type:
             attributes["agent_type"] = agent_type
 
@@ -335,7 +335,7 @@ def record_task_completed(
 
 def record_task_failed(
     user_id: Optional[str] = None,
-    team_id: Optional[str] = None,
+    workflow_id: Optional[str] = None,
     agent_type: Optional[str] = None,
 ) -> None:
     """
@@ -343,7 +343,7 @@ def record_task_failed(
 
     Args:
         user_id: Optional user identifier
-        team_id: Optional team identifier
+        workflow_id: Optional workflow identifier
         agent_type: Optional agent type
     """
     if not is_telemetry_enabled():
@@ -353,12 +353,12 @@ def record_task_failed(
         attributes = {}
         if user_id:
             attributes["user_id"] = user_id
-        if team_id:
-            attributes["team_id"] = team_id
+        if workflow_id:
+            attributes["workflow_id"] = workflow_id
         if agent_type:
             attributes["agent_type"] = agent_type
 
-        get_agent-template_metrics().task_failed.add(1, attributes)
+        get_agent_template_metrics().task_failed.add(1, attributes)
     except Exception as e:
         logger.debug(f"Failed to record task failed metric: {e}")
 
@@ -374,7 +374,7 @@ def record_user_activity(is_new: bool = False) -> None:
         return
 
     try:
-        metrics = get_agent-template_metrics()
+        metrics = get_agent_template_metrics()
         metrics.user_active.add(1)
 
         if is_new:
@@ -403,7 +403,7 @@ def record_model_call(
         return
 
     try:
-        metrics = get_agent-template_metrics()
+        metrics = get_agent_template_metrics()
 
         # Record model call
         call_attributes = {}

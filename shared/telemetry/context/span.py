@@ -452,41 +452,42 @@ def set_task_context(
         set_span_attributes(attributes)
 
 
-def set_team_context(
-    team_id: Optional[str] = None, team_name: Optional[str] = None
+def set_workflow_context(
+    workflow_id: Optional[str] = None, workflow_name: Optional[str] = None
 ) -> None:
     """
-    Set team context attributes on the current span.
+    Set workflow context attributes on the current span.
 
     Args:
-        team_id: Team identifier
-        team_name: Team name
+        workflow_id: Workflow identifier
+        workflow_name: Workflow name
     """
     attributes = {}
-    if team_id:
-        attributes[SpanAttributes.TEAM_ID] = team_id
-    if team_name:
-        attributes[SpanAttributes.TEAM_NAME] = team_name
+    if workflow_id:
+        attributes[SpanAttributes.WORKFLOW_ID] = workflow_id
+    if workflow_name:
+        attributes[SpanAttributes.WORKFLOW_NAME] = workflow_name
 
     if attributes:
         set_span_attributes(attributes)
 
 
-def set_bot_context(
-    bot_id: Optional[str] = None, bot_name: Optional[str] = None
+def set_agent_profile_context(
+    agent_profile_id: Optional[str] = None,
+    agent_profile_name: Optional[str] = None,
 ) -> None:
     """
-    Set bot context attributes on the current span.
+    Set agent profile context attributes on the current span.
 
     Args:
-        bot_id: Bot identifier
-        bot_name: Bot name
+        agent_profile_id: Agent profile identifier
+        agent_profile_name: Agent profile name
     """
     attributes = {}
-    if bot_id:
-        attributes[SpanAttributes.BOT_ID] = bot_id
-    if bot_name:
-        attributes[SpanAttributes.BOT_NAME] = bot_name
+    if agent_profile_id:
+        attributes[SpanAttributes.AGENT_PROFILE_ID] = agent_profile_id
+    if agent_profile_name:
+        attributes[SpanAttributes.AGENT_PROFILE_NAME] = agent_profile_name
 
     if attributes:
         set_span_attributes(attributes)
@@ -519,7 +520,7 @@ def set_agent_context(
     Set agent context attributes on the current span.
 
     Args:
-        agent_type: Agent type (e.g., "ClaudeCode", "Agno", "Dify")
+        agent_type: Agent type (for example, "chat", "research", "coding")
         agent_name: Agent name
     """
     attributes = {}

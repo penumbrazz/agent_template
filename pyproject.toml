@@ -1,3 +1,10 @@
+[project]
+name = "agent-template-workspace"
+version = "0.1.0"
+description = "Workspace-level tool configuration for Agent Template"
+requires-python = ">=3.10,<3.14"
+dependencies = []
+
 [tool.black]
 line-length = 88
 target-version = ['py310']
