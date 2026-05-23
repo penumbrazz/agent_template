@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-bg-base: 255 255 255;
+  --color-bg-surface: 247 247 248;
+  --color-text-primary: 26 26 26;
+  --color-text-secondary: 102 102 102;
+  --color-text-muted: 136 136 136;
+  --color-primary: 20 184 166;
+  --color-border: 224 224 224;
+  --radius: 0.5rem;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
