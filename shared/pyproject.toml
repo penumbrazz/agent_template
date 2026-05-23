@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "agent-template-shared"
 version = "0.1.0"
@@ -20,6 +24,12 @@ dev = [
     "black>=23.7.0",
     "isort>=5.12.0",
 ]
+
+[tool.setuptools]
+packages = ["shared", "shared.telemetry", "shared.telemetry.context", "shared.telemetry.metrics", "shared.utils"]
+
+[tool.setuptools.package-dir]
+shared = "."
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

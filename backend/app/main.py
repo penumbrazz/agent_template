@@ -35,6 +35,35 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(api_router, prefix=settings.API_PREFIX)
+
+    from shared.telemetry.config import get_otel_config
+
+    otel_config = get_otel_config("agent-template-backend")
+    if otel_config.enabled:
+        try:
+            from shared.telemetry.core import init_telemetry
+            from shared.telemetry.instrumentation import (
+                setup_opentelemetry_instrumentation,
+            )
+
+            init_telemetry(
+                service_name=otel_config.service_name,
+                enabled=otel_config.enabled,
+                otlp_endpoint=otel_config.otlp_endpoint,
+                sampler_ratio=otel_config.sampler_ratio,
+                service_version=settings.VERSION,
+                deployment_environment=settings.ENVIRONMENT,
+                metrics_enabled=otel_config.metrics_enabled,
+                capture_request_headers=otel_config.capture_request_headers,
+                capture_request_body=otel_config.capture_request_body,
+                capture_response_headers=otel_config.capture_response_headers,
+                capture_response_body=otel_config.capture_response_body,
+                max_body_size=otel_config.max_body_size,
+            )
+            setup_opentelemetry_instrumentation(app=app, enable_sqlalchemy=False)
+        except Exception:
+            pass
+
     return app
 
 
