@@ -14,7 +14,7 @@ A full-stack AI application template with FastAPI backend, Next.js frontend, sha
 
 ```bash
 cp .env.example .env
-docker compose up -d mysql redis
+# Ensure PostgreSQL and Redis are running, then:
 cd backend && uv sync && uv run pytest
 cd ../frontend && npm install && npm test
 ```

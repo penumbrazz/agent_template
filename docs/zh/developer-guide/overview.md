@@ -12,7 +12,7 @@ sidebar_position: 1
 - **Frontend**：Next.js App Router 应用，包含 Tailwind CSS、shadcn/ui 基础组件、runtime config、API client。
 - **Shared**：Python 共享包，包含日志、HTTP 工具、加密工具、OpenTelemetry 遥测。
 - **OpenTelemetry**：Python 和前端 tracer，默认关闭，通过环境变量启用。
-- **Docker**：MySQL、Redis、Backend、Frontend 四个核心服务的 compose 编排。
+- **Docker**：PostgreSQL、Redis、Backend、Frontend 四个核心服务的 compose 编排。
 - **脚本**：`scripts/dev.sh`、`scripts/test.sh`、`scripts/format.sh`。
 
 ## 目录结构
@@ -34,13 +34,10 @@ agent_template/
 # 1. 配置环境变量
 cp .env.example .env
 
-# 2. 启动基础设施
-docker compose up -d mysql redis
-
-# 3. 启动后端
+# 2. 启动后端
 cd backend && uv sync && uv run uvicorn app.main:app --reload
 
-# 4. 启动前端
+# 3. 启动前端
 cd frontend && npm install && npm run dev
 ```
 

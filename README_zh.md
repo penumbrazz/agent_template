@@ -14,7 +14,7 @@
 
 ```bash
 cp .env.example .env
-docker compose up -d mysql redis
+# 确保 PostgreSQL 和 Redis 已运行，然后：
 cd backend && uv sync && uv run pytest
 cd ../frontend && npm install && npm test
 ```

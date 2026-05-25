@@ -12,7 +12,7 @@ The first migration batch established the following common engineering capabilit
 - **Frontend**: Next.js App Router application with Tailwind CSS, shadcn/ui base components, runtime config, and API client.
 - **Shared**: Python shared package with logging, HTTP utilities, cryptography utilities, and OpenTelemetry telemetry.
 - **OpenTelemetry**: Python and frontend tracers, disabled by default, enabled via environment variables.
-- **Docker**: MySQL, Redis, Backend, Frontend core service compose orchestration.
+- **Docker**: PostgreSQL, Redis, Backend, Frontend core service compose orchestration.
 - **Scripts**: `scripts/dev.sh`, `scripts/test.sh`, `scripts/format.sh`.
 
 ## Directory Structure
@@ -34,13 +34,10 @@ agent_template/
 # 1. Configure environment
 cp .env.example .env
 
-# 2. Start infrastructure
-docker compose up -d mysql redis
-
-# 3. Start backend
+# 2. Start backend
 cd backend && uv sync && uv run uvicorn app.main:app --reload
 
-# 4. Start frontend
+# 3. Start frontend
 cd frontend && npm install && npm run dev
 ```
 
