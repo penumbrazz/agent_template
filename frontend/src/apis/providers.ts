@@ -1,5 +1,5 @@
 import { apiClient } from '@/apis/client'
-import type { Provider, ProviderCreate, ProviderUpdate } from '@/types/provider'
+import type { Provider, ProviderCreate, ProviderUpdate, ValidateResult } from '@/types/provider'
 
 export const providersApi = {
   list: () => apiClient.get<Provider[]>('/providers'),
@@ -23,4 +23,7 @@ export const providersApi = {
       `/providers/${id}/test`,
       modelId ? { model_id: modelId } : undefined,
     ),
+
+  validate: (data: { base_url: string; api_key: string; provider_type: string }) =>
+    apiClient.post<ValidateResult>('/providers/validate', data),
 }

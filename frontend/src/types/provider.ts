@@ -24,3 +24,9 @@ export interface ProviderUpdate {
   base_url?: string
   api_key?: string
 }
+
+export interface ValidateResult {
+  success: boolean
+  latency_ms: number
+  error: string | null
+}
