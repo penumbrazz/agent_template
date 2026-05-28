@@ -1,14 +1,14 @@
-import structlog
 from contextlib import asynccontextmanager
 
+import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.router import api_router
 from app.core.config import settings
+from app.core.error_tracking import init_error_tracking
 from app.core.langfuse import init_langfuse, shutdown_langfuse
 from app.core.logging import setup_logging
-from app.core.error_tracking import init_error_tracking
 
 
 @asynccontextmanager
@@ -17,7 +17,9 @@ async def lifespan(app: FastAPI):
     init_error_tracking()
     langfuse = init_langfuse()
     if langfuse:
-        structlog.get_logger("langfuse").info("langfuse_connected", host=settings.LANGFUSE_HOST)
+        structlog.get_logger("langfuse").info(
+            "langfuse_connected", host=settings.LANGFUSE_HOST
+        )
     yield
     shutdown_langfuse()
 

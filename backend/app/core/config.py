@@ -15,7 +15,9 @@ class Settings(BaseSettings):
     API_PREFIX: str = "/api"
     ENABLE_API_DOCS: bool = True
 
-    DATABASE_URL: str = "postgresql+psycopg2://postgres:postgres@localhost:5432/agent_template"
+    DATABASE_URL: str = (
+        "postgresql+psycopg2://postgres:postgres@localhost:5432/agent_template"
+    )
     REDIS_URL: str = "redis://localhost:6379/0"
 
     SECRET_KEY: str = "change-me"

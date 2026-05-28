@@ -1,5 +1,5 @@
-from app.schemas.provider import ProviderCreate, ProviderType, ProviderUpdate
 from app.schemas.llm_model import ModelCreate, ModelUpdate
+from app.schemas.provider import ProviderCreate, ProviderType, ProviderUpdate
 from app.schemas.setting import SettingUpdate
 
 

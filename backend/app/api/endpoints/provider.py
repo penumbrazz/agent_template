@@ -4,8 +4,14 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_current_user, require_superuser
 from app.db.session import get_db
 from app.models.user import User
-from app.schemas.provider import ProviderCreate, ProviderRead, ProviderTestRequest, ProviderUpdate
+from app.schemas.provider import (
+    ProviderCreate,
+    ProviderRead,
+    ProviderTestRequest,
+    ProviderUpdate,
+)
 from app.services.provider import (
+    _mask_key,
     create_provider,
     delete_provider,
     fetch_models,
@@ -13,7 +19,6 @@ from app.services.provider import (
     list_providers,
     test_provider,
     update_provider,
-    _mask_key,
 )
 
 router = APIRouter(prefix="/providers", tags=["providers"])

@@ -18,7 +18,9 @@ from app.core.config import settings
 
 def test_glitchtip_pipeline():
     """Verify the full DSN -> init -> capture -> send pipeline."""
-    assert settings.SENTRY_DSN, "SENTRY_DSN must be configured to run GlitchTip integration tests"
+    assert (
+        settings.SENTRY_DSN
+    ), "SENTRY_DSN must be configured to run GlitchTip integration tests"
 
     from app.core.error_tracking import init_error_tracking
 

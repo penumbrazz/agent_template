@@ -1,4 +1,4 @@
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 
 class TestProviderList:
@@ -90,9 +90,7 @@ class TestProviderDelete:
         )
         provider_id = create_resp.json()["id"]
 
-        resp = client.delete(
-            f"/api/providers/{provider_id}", headers=admin_user
-        )
+        resp = client.delete(f"/api/providers/{provider_id}", headers=admin_user)
         assert resp.status_code == 204
 
         list_resp = client.get("/api/providers", headers=admin_user)
@@ -149,6 +147,7 @@ class TestProviderTest:
         provider_id = create_resp.json()["id"]
 
         from tests.conftest import TestSessionLocal
+
         from app.models.llm_model import LLMModel
 
         db = TestSessionLocal()

@@ -38,9 +38,7 @@ def create_provider(db: Session, data: ProviderCreate) -> Provider:
     return provider
 
 
-def update_provider(
-    db: Session, provider: Provider, data: ProviderUpdate
-) -> Provider:
+def update_provider(db: Session, provider: Provider, data: ProviderUpdate) -> Provider:
     update_data = data.model_dump(exclude_unset=True)
     if "type" in update_data and update_data["type"] is not None:
         update_data["type"] = update_data["type"].value
@@ -83,7 +81,8 @@ def fetch_models(db: Session, provider: Provider) -> list[LLMModel]:
     remote_ids = [m["id"] for m in resp.json().get("data", [])]
 
     existing_ids = {
-        m.model_id for m in db.query(LLMModel).filter(LLMModel.provider_id == provider.id).all()
+        m.model_id
+        for m in db.query(LLMModel).filter(LLMModel.provider_id == provider.id).all()
     }
 
     new_models = []
@@ -107,13 +106,13 @@ def test_provider(
         return {"success": False, "latency_ms": 0, "error": "Failed to decrypt API key"}
 
     if not model_id:
-        model = (
-            db.query(LLMModel)
-            .filter(LLMModel.provider_id == provider.id)
-            .first()
-        )
+        model = db.query(LLMModel).filter(LLMModel.provider_id == provider.id).first()
         if not model:
-            return {"success": False, "latency_ms": 0, "error": "No models available for testing"}
+            return {
+                "success": False,
+                "latency_ms": 0,
+                "error": "No models available for testing",
+            }
         model_id = model.model_id
 
     base_url = provider.base_url.rstrip("/")

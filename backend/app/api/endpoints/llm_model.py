@@ -5,7 +5,12 @@ from app.api.deps import get_current_user, require_superuser
 from app.db.session import get_db
 from app.models.llm_model import LLMModel
 from app.models.user import User
-from app.schemas.llm_model import ModelCreate, ModelRead, ModelToggleResponse, ModelUpdate
+from app.schemas.llm_model import (
+    ModelCreate,
+    ModelRead,
+    ModelToggleResponse,
+    ModelUpdate,
+)
 from app.services.llm_model import (
     create_model,
     delete_model,

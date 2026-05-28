@@ -1,4 +1,5 @@
 from tests.conftest import TestSessionLocal
+
 from app.models.llm_model import LLMModel
 
 
@@ -57,15 +58,11 @@ class TestModelToggle:
         )
         model_id = create_resp.json()["id"]
 
-        resp = client.patch(
-            f"/api/models/{model_id}/toggle", headers=admin_user
-        )
+        resp = client.patch(f"/api/models/{model_id}/toggle", headers=admin_user)
         assert resp.status_code == 200
         assert resp.json()["is_enabled"] is True
 
-        resp = client.patch(
-            f"/api/models/{model_id}/toggle", headers=admin_user
-        )
+        resp = client.patch(f"/api/models/{model_id}/toggle", headers=admin_user)
         assert resp.json()["is_enabled"] is False
 
 
