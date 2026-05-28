@@ -1,6 +1,7 @@
 'use client'
 
 import useSWR from 'swr'
+import { toast } from 'sonner'
 import { settingsApi } from '@/apis/settings'
 import { modelsApi } from '@/apis/models'
 import {
@@ -21,8 +22,13 @@ export function GeneralSettings() {
   const enabledModels = models ?? []
 
   const handleDefaultChange = async (value: string) => {
-    await settingsApi.update('default_model_id', value)
-    mutateSettings()
+    try {
+      await settingsApi.update('default_model_id', value)
+      mutateSettings()
+    } catch (e) {
+      const message = e instanceof Error ? e.message : '保存设置失败'
+      toast.error(message)
+    }
   }
 
   return (

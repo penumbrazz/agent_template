@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { toast } from 'sonner'
 import type { ModelCreate } from '@/types/model'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -42,6 +43,9 @@ export function ModelFormDialog({
       onOpenChange(false)
       setModelId('')
       setDisplayName('')
+    } catch (e) {
+      const message = e instanceof Error ? e.message : '添加模型失败，请稍后重试'
+      toast.error(message)
     } finally {
       setLoading(false)
     }
