@@ -1,3 +1,5 @@
+import { SettingsPanel } from '@/components/settings/settings-panel'
+
 export default function HomePage() {
   return (
     <main className="min-h-screen bg-base text-text-primary">
@@ -8,6 +10,7 @@ export default function HomePage() {
           工程底座已就绪。后续模块会在这里接入模型供应商、提示词模板、智能体配置和多智能体编排。
         </p>
       </section>
+      <SettingsPanel />
     </main>
   )
 }
