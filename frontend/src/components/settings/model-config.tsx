@@ -13,6 +13,7 @@ import { ProviderFormDialog } from './provider-form-dialog'
 import { ModelFormDialog } from './model-form-dialog'
 import { TestModelDialog } from './test-model-dialog'
 import { Plus, RefreshCw, Trash2, FlaskConical, Edit } from 'lucide-react'
+import { toast } from 'sonner'
 
 export function ModelConfig() {
   const { data: providers, mutate: mutateProviders } = useSWR(
@@ -35,43 +36,85 @@ export function ModelConfig() {
   ) ?? []
 
   const handleCreateProvider = async (data: ProviderCreate) => {
-    await providersApi.create(data)
-    mutateProviders()
+    try {
+      await providersApi.create(data)
+      mutateProviders()
+      toast.success('Provider 创建成功')
+    } catch (e) {
+      const message = e instanceof Error ? e.message : '创建失败，请稍后重试'
+      toast.error(message)
+      throw e
+    }
   }
 
   const handleUpdateProvider = async (data: ProviderCreate) => {
     if (!editingProvider) return
-    await providersApi.update(editingProvider.id, data)
-    mutateProviders()
-    setEditingProvider(null)
+    try {
+      await providersApi.update(editingProvider.id, data)
+      mutateProviders()
+      setEditingProvider(null)
+      toast.success('Provider 更新成功')
+    } catch (e) {
+      const message = e instanceof Error ? e.message : '更新失败，请稍后重试'
+      toast.error(message)
+      throw e
+    }
   }
 
   const handleDeleteProvider = async (id: string) => {
-    await providersApi.delete(id)
-    mutateProviders()
-    mutateModels()
-    if (selectedProvider?.id === id) setSelectedProvider(null)
+    try {
+      await providersApi.delete(id)
+      mutateProviders()
+      mutateModels()
+      if (selectedProvider?.id === id) setSelectedProvider(null)
+      toast.success('Provider 已删除')
+    } catch (e) {
+      const message = e instanceof Error ? e.message : '删除失败，请稍后重试'
+      toast.error(message)
+    }
   }
 
   const handleFetchModels = async () => {
     if (!selectedProvider) return
-    await providersApi.fetchModels(selectedProvider.id)
-    mutateModels()
+    try {
+      await providersApi.fetchModels(selectedProvider.id)
+      mutateModels()
+      toast.success('模型列表已更新')
+    } catch (e) {
+      const message = e instanceof Error ? e.message : '获取模型失败'
+      toast.error(message)
+    }
   }
 
   const handleCreateModel = async (data: ModelCreate) => {
-    await modelsApi.create(data)
-    mutateModels()
+    try {
+      await modelsApi.create(data)
+      mutateModels()
+    } catch (e) {
+      const message = e instanceof Error ? e.message : '创建模型失败'
+      toast.error(message)
+      throw e
+    }
   }
 
   const handleToggleModel = async (model: LLMModel) => {
-    await modelsApi.toggle(model.id)
-    mutateModels()
+    try {
+      await modelsApi.toggle(model.id)
+      mutateModels()
+    } catch (e) {
+      const message = e instanceof Error ? e.message : '切换模型状态失败'
+      toast.error(message)
+    }
   }
 
   const handleDeleteModel = async (id: string) => {
-    await modelsApi.delete(id)
-    mutateModels()
+    try {
+      await modelsApi.delete(id)
+      mutateModels()
+    } catch (e) {
+      const message = e instanceof Error ? e.message : '删除模型失败'
+      toast.error(message)
+    }
   }
 
   return (
