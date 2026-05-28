@@ -32,6 +32,8 @@ class Settings(BaseSettings):
 
     SENTRY_DSN: str = ""  # GlitchTip DSN (uses Sentry SDK protocol)
 
+    ENCRYPTION_KEY: str = "12345678901234567890123456789012"
+
     SENTRY_TRACES_SAMPLE_RATE: float = 1.0
 
     model_config = SettingsConfigDict(
