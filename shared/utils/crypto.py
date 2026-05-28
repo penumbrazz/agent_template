@@ -3,7 +3,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Cryptography utilities for encrypting sensitive data like git tokens and API keys
+Cryptography utilities for encrypting sensitive data like git tokens and API keys.
+
+Uses AES-256-GCM with a random nonce per encryption. Nonce is prepended to ciphertext.
+Legacy AES-256-CBC data (static IV) is supported for backward-compatible decryption only.
 """
 
 import base64
@@ -12,52 +15,80 @@ import os
 from typing import Optional
 
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from cryptography.hazmat.primitives.padding import PKCS7
 
 logger = logging.getLogger(__name__)
 
+_VERSION_BYTE = b"\x01"
+_NONCE_SIZE = 12  # 96-bit nonce recommended for AES-GCM
+
 # Global encryption key cache
-_aes_key = None
-_aes_iv = None
+_aes_key: Optional[bytes] = None
 
-# Global attachment encryption key cache (separate from git token keys)
-_attachment_aes_key = None
-_attachment_aes_iv = None
+# Global attachment encryption key cache
+_attachment_aes_key: Optional[bytes] = None
+
+# Legacy static IVs — kept only for backward-compatible decryption of old CBC data
+_legacy_iv = b"1234567890123456"
+_legacy_attachment_iv = b"1234567890123456"
 
 
-def _get_encryption_key():
-    """Get or initialize encryption key and IV from environment variables"""
-    global _aes_key, _aes_iv
+def _get_encryption_key() -> bytes:
+    """Load or return cached AES-256 key from GIT_TOKEN_AES_KEY env var."""
+    global _aes_key
     if _aes_key is None:
-        # Load keys from environment variables
-        aes_key = os.environ.get(
-            "GIT_TOKEN_AES_KEY", "12345678901234567890123456789012"
-        )
-        aes_iv = os.environ.get("GIT_TOKEN_AES_IV", "1234567890123456")
-        _aes_key = aes_key.encode("utf-8")
-        _aes_iv = aes_iv.encode("utf-8")
-        logger.info("Loaded encryption keys from environment variables")
-    return _aes_key, _aes_iv
+        key = os.environ.get("GIT_TOKEN_AES_KEY", "12345678901234567890123456789012")
+        _aes_key = key.encode("utf-8")
+        logger.info("Loaded encryption key from environment variables")
+    return _aes_key
 
 
-def _get_attachment_encryption_key():
-    """
-    Get or initialize attachment encryption key and IV from environment variables.
-
-    Uses separate keys from git token encryption for security isolation.
-    """
-    global _attachment_aes_key, _attachment_aes_iv
+def _get_attachment_encryption_key() -> bytes:
+    """Load or return cached attachment AES-256 key from ATTACHMENT_AES_KEY env var."""
+    global _attachment_aes_key
     if _attachment_aes_key is None:
-        # Load attachment-specific keys from environment variables
-        aes_key = os.environ.get(
+        key = os.environ.get(
             "ATTACHMENT_AES_KEY", "12345678901234567890123456789012"
         )
-        aes_iv = os.environ.get("ATTACHMENT_AES_IV", "1234567890123456")
-        _attachment_aes_key = aes_key.encode("utf-8")
-        _attachment_aes_iv = aes_iv.encode("utf-8")
-        logger.info("Loaded attachment encryption keys from environment variables")
-    return _attachment_aes_key, _attachment_aes_iv
+        _attachment_aes_key = key.encode("utf-8")
+        logger.info("Loaded attachment encryption key from environment variables")
+    return _attachment_aes_key
+
+
+def _aes_gcm_encrypt(key: bytes, plaintext: bytes) -> bytes:
+    """AES-GCM encrypt with random nonce. Returns version_byte + nonce + ciphertext + tag."""
+    nonce = os.urandom(_NONCE_SIZE)
+    aesgcm = AESGCM(key)
+    ciphertext = aesgcm.encrypt(nonce, plaintext, None)
+    return _VERSION_BYTE + nonce + ciphertext
+
+
+def _aes_gcm_decrypt(key: bytes, data: bytes) -> bytes:
+    """AES-GCM decrypt. Expects version_byte + nonce + ciphertext + tag."""
+    nonce = data[1 : 1 + _NONCE_SIZE]
+    ciphertext = data[1 + _NONCE_SIZE :]
+    aesgcm = AESGCM(key)
+    return aesgcm.decrypt(nonce, ciphertext, None)
+
+
+def _legacy_cbc_decrypt(key: bytes, iv: bytes, encrypted_bytes: bytes) -> bytes:
+    """Decrypt legacy AES-CBC data (static IV, no version byte)."""
+    cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
+    decryptor = cipher.decryptor()
+    decrypted_padded = decryptor.update(encrypted_bytes) + decryptor.finalize()
+    unpadder = PKCS7(128).unpadder()
+    return unpadder.update(decrypted_padded) + unpadder.finalize()
+
+
+def _legacy_cbc_encrypt(key: bytes, iv: bytes, plaintext: bytes) -> bytes:
+    """Encrypt using legacy AES-CBC (static IV). Used only for fallback scenarios."""
+    cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
+    encryptor = cipher.encryptor()
+    padder = PKCS7(128).padder()
+    padded = padder.update(plaintext) + padder.finalize()
+    return encryptor.update(padded) + encryptor.finalize()
 
 
 # ============================================================================
@@ -67,15 +98,13 @@ def _get_attachment_encryption_key():
 
 def encrypt_sensitive_data(plain_text: str) -> str:
     """
-    Encrypt sensitive data using AES-256-CBC encryption
-
-    This is the core encryption function used by all sensitive data encryption.
+    Encrypt sensitive data using AES-256-GCM encryption.
 
     Args:
         plain_text: Plain text data to encrypt
 
     Returns:
-        Base64 encoded encrypted data
+        Base64 encoded: version_byte + nonce + ciphertext + tag
     """
     if not plain_text:
         return ""
@@ -84,39 +113,23 @@ def encrypt_sensitive_data(plain_text: str) -> str:
         return "***"
 
     try:
-        aes_key, aes_iv = _get_encryption_key()
-
-        # Create cipher object
-        cipher = Cipher(
-            algorithms.AES(aes_key), modes.CBC(aes_iv), backend=default_backend()
-        )
-        encryptor = cipher.encryptor()
-
-        # Pad the data to 16-byte boundary (AES block size)
-        padder = padding.PKCS7(128).padder()
-        padded_data = padder.update(plain_text.encode("utf-8")) + padder.finalize()
-
-        # Encrypt the data
-        encrypted_bytes = encryptor.update(padded_data) + encryptor.finalize()
-
-        # Return base64 encoded encrypted data
-        return base64.b64encode(encrypted_bytes).decode("utf-8")
+        key = _get_encryption_key()
+        encrypted = _aes_gcm_encrypt(key, plain_text.encode("utf-8"))
+        return base64.b64encode(encrypted).decode("utf-8")
     except Exception as e:
-        logger.error(f"Failed to encrypt sensitive data: {str(e)}")
+        logger.error(f"Failed to encrypt sensitive data: {e}")
         raise
 
 
 def decrypt_sensitive_data(encrypted_text: str) -> Optional[str]:
     """
-    Decrypt sensitive data using AES-256-CBC decryption
-
-    This is the core decryption function used by all sensitive data decryption.
+    Decrypt sensitive data. Supports AES-256-GCM (current) and legacy AES-256-CBC.
 
     Args:
         encrypted_text: Base64 encoded encrypted data
 
     Returns:
-        Decrypted plain text data, or original text if decryption fails
+        Decrypted plain text, or original text if decryption fails
     """
     if not encrypted_text:
         return ""
@@ -125,98 +138,63 @@ def decrypt_sensitive_data(encrypted_text: str) -> Optional[str]:
         return "***"
 
     try:
-        aes_key, aes_iv = _get_encryption_key()
+        raw = base64.b64decode(encrypted_text.encode("utf-8"))
+    except Exception:
+        return encrypted_text
 
-        # Decode base64 encrypted data
-        encrypted_bytes = base64.b64decode(encrypted_text.encode("utf-8"))
+    # Try AES-GCM (version byte 0x01)
+    if raw[:1] == _VERSION_BYTE and len(raw) > 1 + _NONCE_SIZE + 16:
+        try:
+            key = _get_encryption_key()
+            return _aes_gcm_decrypt(key, raw).decode("utf-8")
+        except Exception:
+            pass  # Fall through to legacy
 
-        # Create cipher object
-        cipher = Cipher(
-            algorithms.AES(aes_key), modes.CBC(aes_iv), backend=default_backend()
-        )
-        decryptor = cipher.decryptor()
-
-        # Decrypt the data
-        decrypted_padded_bytes = (
-            decryptor.update(encrypted_bytes) + decryptor.finalize()
-        )
-
-        # Unpad the data
-        unpadder = padding.PKCS7(128).unpadder()
-        decrypted_bytes = unpadder.update(decrypted_padded_bytes) + unpadder.finalize()
-
-        # Return decrypted string
-        return decrypted_bytes.decode("utf-8")
+    # Legacy AES-CBC fallback (static IV)
+    try:
+        key = _get_encryption_key()
+        decrypted = _legacy_cbc_decrypt(key, _legacy_iv, raw)
+        return decrypted.decode("utf-8")
     except Exception as e:
-        logger.warning(f"Failed to decrypt sensitive data: {str(e)}")
-        # Return the original text as fallback for backward compatibility
+        logger.warning(f"Failed to decrypt sensitive data: {e}")
         return encrypted_text
 
 
 def is_data_encrypted(data: str) -> bool:
-    """
-    Check if data appears to be encrypted (base64 encoded AES ciphertext)
-
-    Args:
-        data: Data to check
-
-    Returns:
-        True if data appears to be encrypted, False otherwise
-    """
+    """Check if data appears to be encrypted (base64 encoded with GCM or CBC format)."""
     if not data:
         return False
 
     try:
-        # Try to base64 decode
         decoded = base64.b64decode(data.encode("utf-8"))
-        # If successful and the result is binary data with correct block size,
-        # it's likely encrypted
-        return len(decoded) > 0 and len(decoded) % 16 == 0
+        if not decoded:
+            return False
+        # GCM format: version byte + 12-byte nonce + ciphertext + 16-byte tag
+        if decoded[:1] == _VERSION_BYTE:
+            return len(decoded) > 1 + _NONCE_SIZE + 16
+        # Legacy CBC: any valid base64 with block-aligned length
+        return len(decoded) % 16 == 0
     except Exception:
         return False
 
 
 # ============================================================================
-# Git Token specific functions (for backward compatibility)
+# Git Token specific functions
 # ============================================================================
 
 
 def encrypt_git_token(plain_token: str) -> str:
-    """
-    Encrypt git token using AES-256-CBC encryption
-
-    Args:
-        plain_token: Plain text git token
-
-    Returns:
-        Base64 encoded encrypted token
-    """
+    """Encrypt git token using AES-256-GCM encryption."""
     return encrypt_sensitive_data(plain_token)
 
 
 def decrypt_git_token(encrypted_token: str) -> Optional[str]:
-    """
-    Decrypt git token using AES-256-CBC decryption
-
-    Args:
-        encrypted_token: Base64 encoded encrypted token
-
-    Returns:
-        Decrypted plain text token, or original token if decryption fails
-    """
+    """Decrypt git token. Supports GCM and legacy CBC formats."""
     return decrypt_sensitive_data(encrypted_token)
 
 
 def is_token_encrypted(token: str) -> bool:
-    """
-    Check if a token appears to be encrypted (base64 encoded)
-
-    Args:
-        token: Token to check
-
-    Returns:
-        True if token appears to be encrypted, False otherwise
-    """
+    """Check if a token appears to be encrypted."""
     return is_data_encrypted(token)
 
 
@@ -226,19 +204,10 @@ def is_token_encrypted(token: str) -> bool:
 
 
 def encrypt_api_key(plain_key: str) -> str:
-    """
-    Encrypt API key using AES-256-CBC encryption
-
-    Args:
-        plain_key: Plain text API key
-
-    Returns:
-        Base64 encoded encrypted key
-    """
+    """Encrypt API key using AES-256-GCM encryption."""
     if not plain_key:
         return ""
 
-    # Don't re-encrypt if already encrypted
     if is_api_key_encrypted(plain_key):
         return plain_key
 
@@ -246,19 +215,10 @@ def encrypt_api_key(plain_key: str) -> str:
 
 
 def decrypt_api_key(encrypted_key: str) -> Optional[str]:
-    """
-    Decrypt API key using AES-256-CBC decryption
-
-    Args:
-        encrypted_key: Base64 encoded encrypted key
-
-    Returns:
-        Decrypted plain text key, or original key if decryption fails
-    """
+    """Decrypt API key. Supports GCM and legacy CBC formats."""
     if not encrypted_key:
         return ""
 
-    # If not encrypted, return as-is (backward compatibility)
     if not is_api_key_encrypted(encrypted_key):
         return encrypted_key
 
@@ -266,19 +226,10 @@ def decrypt_api_key(encrypted_key: str) -> Optional[str]:
 
 
 def is_api_key_encrypted(key: str) -> bool:
-    """
-    Check if an API key appears to be encrypted (base64 encoded AES ciphertext)
-
-    Args:
-        key: Key to check
-
-    Returns:
-        True if key appears to be encrypted, False otherwise
-    """
+    """Check if an API key appears to be encrypted."""
     if not key:
         return False
 
-    # Common API key prefixes that indicate plain text
     plain_text_prefixes = ["sk-", "sk_", "api-", "api_", "key-", "key_"]
     for prefix in plain_text_prefixes:
         if key.startswith(prefix):
@@ -288,23 +239,13 @@ def is_api_key_encrypted(key: str) -> bool:
 
 
 def mask_api_key(key: str) -> str:
-    """
-    Mask an API key for display purposes
-
-    Args:
-        key: API key to mask (can be encrypted or plain text)
-
-    Returns:
-        Masked key showing only first and last few characters, or "***" if encrypted
-    """
+    """Mask an API key for display purposes."""
     if not key or key == "***":
         return "***"
 
-    # If encrypted, just return mask
     if is_api_key_encrypted(key):
         return "***"
 
-    # For plain text keys, show partial
     if len(key) <= 8:
         return "***"
 
@@ -318,108 +259,61 @@ def mask_api_key(key: str) -> str:
 
 def encrypt_attachment(binary_data: bytes) -> bytes:
     """
-    Encrypt attachment binary data using AES-256-CBC encryption.
-
-    Uses separate encryption keys (ATTACHMENT_AES_KEY/ATTACHMENT_AES_IV) from
-    git token encryption for security isolation.
+    Encrypt attachment binary data using AES-256-GCM encryption.
 
     Args:
         binary_data: Attachment binary data to encrypt
 
     Returns:
-        Encrypted binary data (raw bytes, NOT base64 encoded)
-
-    Raises:
-        Exception: If encryption fails
+        version_byte + nonce + ciphertext + tag (raw bytes)
     """
     if not binary_data:
         return b""
 
     try:
-        aes_key, aes_iv = _get_attachment_encryption_key()
-
-        # Create cipher object
-        cipher = Cipher(
-            algorithms.AES(aes_key), modes.CBC(aes_iv), backend=default_backend()
-        )
-        encryptor = cipher.encryptor()
-
-        # Pad the data to 16-byte boundary (AES block size)
-        padder = padding.PKCS7(128).padder()
-        padded_data = padder.update(binary_data) + padder.finalize()
-
-        # Encrypt the data
-        encrypted_bytes = encryptor.update(padded_data) + encryptor.finalize()
-
-        return encrypted_bytes
+        key = _get_attachment_encryption_key()
+        return _aes_gcm_encrypt(key, binary_data)
     except Exception as e:
-        logger.error(f"Failed to encrypt attachment data: {str(e)}")
+        logger.error(f"Failed to encrypt attachment data: {e}")
         raise
 
 
 def decrypt_attachment(encrypted_data: bytes) -> bytes:
     """
-    Decrypt attachment binary data using AES-256-CBC decryption.
-
-    Uses separate encryption keys (ATTACHMENT_AES_KEY/ATTACHMENT_AES_IV) from
-    git token encryption for security isolation.
+    Decrypt attachment binary data. Supports AES-256-GCM and legacy AES-256-CBC.
 
     Args:
-        encrypted_data: Encrypted binary data (raw bytes, NOT base64 encoded)
+        encrypted_data: Encrypted binary data
 
     Returns:
         Decrypted binary data
-
-    Raises:
-        Exception: If decryption fails
     """
     if not encrypted_data:
         return b""
 
+    # Try AES-GCM (version byte 0x01)
+    if encrypted_data[:1] == _VERSION_BYTE and len(encrypted_data) > 1 + _NONCE_SIZE + 16:
+        try:
+            key = _get_attachment_encryption_key()
+            return _aes_gcm_decrypt(key, encrypted_data)
+        except Exception:
+            pass  # Fall through to legacy
+
+    # Legacy AES-CBC fallback
     try:
-        aes_key, aes_iv = _get_attachment_encryption_key()
-
-        # Create cipher object
-        cipher = Cipher(
-            algorithms.AES(aes_key), modes.CBC(aes_iv), backend=default_backend()
-        )
-        decryptor = cipher.decryptor()
-
-        # Decrypt the data
-        decrypted_padded_bytes = decryptor.update(encrypted_data) + decryptor.finalize()
-
-        # Unpad the data
-        unpadder = padding.PKCS7(128).unpadder()
-        decrypted_bytes = unpadder.update(decrypted_padded_bytes) + unpadder.finalize()
-
-        return decrypted_bytes
+        key = _get_attachment_encryption_key()
+        return _legacy_cbc_decrypt(key, _legacy_attachment_iv, encrypted_data)
     except Exception as e:
-        logger.error(f"Failed to decrypt attachment data: {str(e)}")
+        logger.error(f"Failed to decrypt attachment data: {e}")
         raise
 
 
 def is_attachment_encrypted(data: bytes) -> bool:
-    """
-    Check if attachment data appears to be encrypted.
-
-    This is a heuristic check based on data properties. It checks if:
-    1. Data is not empty
-    2. Data length is a multiple of 16 (AES block size)
-    3. Data appears to have high entropy (typical of encrypted data)
-
-    Args:
-        data: Binary data to check
-
-    Returns:
-        True if data appears to be encrypted, False otherwise
-    """
+    """Check if attachment data appears to be encrypted."""
     if not data or len(data) == 0:
         return False
 
-    # Check if data length is a multiple of 16 (AES block size with PKCS7 padding)
-    if len(data) % 16 != 0:
-        return False
+    if data[:1] == _VERSION_BYTE:
+        return len(data) > 1 + _NONCE_SIZE + 16
 
-    # If it passes block size check, assume it's encrypted
-    # (This is a simple heuristic - more sophisticated checks could be added)
-    return True
+    return len(data) % 16 == 0

@@ -1,3 +1,5 @@
+# Template scaffold: pre-built auth service. Register endpoints in app/api/router.py to activate.
+
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 

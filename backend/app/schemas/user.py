@@ -1,3 +1,5 @@
+# Template scaffold: pre-built User/Auth schemas. Register endpoints in app/api/router.py to activate.
+
 from datetime import datetime
 from typing import Optional
 

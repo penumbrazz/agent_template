@@ -72,7 +72,7 @@ def create_app() -> FastAPI:
             )
             setup_opentelemetry_instrumentation(app=app, enable_sqlalchemy=False)
         except Exception:
-            pass
+            structlog.get_logger("otel").warning("otel_init_failed", exc_info=True)
 
     return app
 

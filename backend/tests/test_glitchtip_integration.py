@@ -1,10 +1,9 @@
 """
 Smoke test: verify the GlitchTip error reporting pipeline.
 
-Phase 1: init_error_tracking() with the real DSN, send a test exception, verify event_id.
-Phase 2: trigger a real 500 through a standalone FastAPI app to verify error handling.
+Requires SENTRY_DSN to be configured in backend/.env.
+Run only when GlitchTip service is available:
 
-Usage:
     python -m pytest tests/test_glitchtip_integration.py -v -s
     python tests/test_glitchtip_integration.py
 """
@@ -17,18 +16,10 @@ from fastapi.testclient import TestClient
 from app.core.config import settings
 
 
-def _has_dsn():
-    return bool(settings.SENTRY_DSN)
-
-
-pytestmark = pytest.mark.skipif(
-    not _has_dsn(),
-    reason="SENTRY_DSN not configured in backend/.env",
-)
-
-
 def test_glitchtip_pipeline():
     """Verify the full DSN -> init -> capture -> send pipeline."""
+    assert settings.SENTRY_DSN, "SENTRY_DSN must be configured to run GlitchTip integration tests"
+
     from app.core.error_tracking import init_error_tracking
 
     # Use a fresh FastAPI instance to avoid polluting the global app

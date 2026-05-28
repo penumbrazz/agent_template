@@ -1,12 +1,10 @@
 import { test, expect } from "@playwright/test";
 
 const GLITCHTIP_HOST = process.env.GLITCHTIP_HOST ?? "";
-const hasGlitchTip = !!GLITCHTIP_HOST;
 
 test.describe("GlitchTip E2E", () => {
-  test.skip(!hasGlitchTip, "Set GLITCHTIP_HOST to run GlitchTip E2E tests");
-
   test("client-side exception reaches GlitchTip", async ({ page }) => {
+    expect(GLITCHTIP_HOST, "GLITCHTIP_HOST must be set to run GlitchTip E2E tests").toBeTruthy();
     const glitchtipRequests: string[] = [];
 
     page.on("request", (req) => {
