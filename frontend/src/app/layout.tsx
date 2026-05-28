@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Toaster } from 'sonner'
 import './globals.css'
 import TelemetryInit from '@/components/TelemetryInit'
 
@@ -13,6 +14,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="bg-base text-text-primary antialiased">
         <TelemetryInit />
         {children}
+        <Toaster position="top-right" richColors />
       </body>
     </html>
   )
