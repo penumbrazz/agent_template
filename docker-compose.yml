@@ -5,20 +5,12 @@ services:
       dockerfile: backend/Dockerfile
     container_name: agent-template-backend
     restart: unless-stopped
+    env_file: ./backend/.env
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://postgres:your-password@localhost:5432/agent_template}
-      REDIS_URL: ${REDIS_URL:-redis://localhost:6379/0}
-      SECRET_KEY: ${BACKEND_SECRET_KEY:-change-me}
-      ENVIRONMENT: ${ENVIRONMENT:-development}
-      OTEL_ENABLED: ${OTEL_ENABLED:-false}
       OTEL_SERVICE_NAME: agent-template-backend
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
-      SENTRY_DSN: ${SENTRY_DSN:-}
-      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
-      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
-      LANGFUSE_HOST: ${LANGFUSE_HOST:-}
     networks:
       - agent-template-network
 
@@ -28,14 +20,12 @@ services:
       dockerfile: frontend/Dockerfile
     container_name: agent-template-frontend
     restart: unless-stopped
+    env_file: ./frontend/.env
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
-      NEXT_PUBLIC_OTEL_ENABLED: ${NEXT_PUBLIC_OTEL_ENABLED:-false}
       NEXT_PUBLIC_OTEL_SERVICE_NAME: agent-template-frontend
       NEXT_PUBLIC_OTEL_COLLECTOR_ENDPOINT: ${NEXT_PUBLIC_OTEL_COLLECTOR_ENDPOINT:-http://localhost:4318}
-      NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
     depends_on:
       - backend
     networks:
