@@ -23,7 +23,7 @@ agent_template/
 ├── frontend/      # Next.js web application
 ├── shared/        # Python shared utilities and telemetry
 ├── telemetry/     # Optional OpenTelemetry Collector stack
-├── observability/ # Sentry, Langfuse self-hosted instructions
+├── observability/ # GlitchTip, Langfuse self-hosted instructions
 ├── scripts/       # Development scripts
 └── docs/          # Chinese and English documentation
 ```

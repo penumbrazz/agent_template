@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     LANGFUSE_PUBLIC_KEY: str = ""
     LANGFUSE_HOST: str = ""
 
-    SENTRY_DSN: str = ""
+    SENTRY_DSN: str = ""  # GlitchTip DSN (uses Sentry SDK protocol)
 
     SENTRY_TRACES_SAMPLE_RATE: float = 1.0
 

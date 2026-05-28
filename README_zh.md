@@ -8,7 +8,7 @@
 - `frontend`: Next.js Web 应用
 - `shared`: Python 共享工具和遥测
 - `telemetry`: OpenTelemetry Collector、Jaeger、Elasticsearch、Kibana 可选观测栈
-- `observability`: Sentry 和 Langfuse 自托管说明
+- `observability`: GlitchTip 和 Langfuse 自托管说明
 
 ## 快速开始
 

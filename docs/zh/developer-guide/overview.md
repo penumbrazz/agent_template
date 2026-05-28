@@ -23,7 +23,7 @@ agent_template/
 ├── frontend/      # Next.js Web 应用
 ├── shared/        # Python 共享工具和遥测
 ├── telemetry/     # 可选 OpenTelemetry Collector 栈
-├── observability/ # Sentry、Langfuse 自托管说明
+├── observability/ # GlitchTip、Langfuse 自托管说明
 ├── scripts/       # 开发脚本
 └── docs/          # 中英文文档
 ```

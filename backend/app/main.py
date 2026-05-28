@@ -8,13 +8,13 @@ from app.api.router import api_router
 from app.core.config import settings
 from app.core.langfuse import init_langfuse, shutdown_langfuse
 from app.core.logging import setup_logging
-from app.core.sentry import init_sentry
+from app.core.error_tracking import init_error_tracking
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     setup_logging()
-    init_sentry()
+    init_error_tracking()
     langfuse = init_langfuse()
     if langfuse:
         structlog.get_logger("langfuse").info("langfuse_connected", host=settings.LANGFUSE_HOST)

@@ -35,11 +35,11 @@ import sys
 sys.path.insert(0, ".")
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from app.core.sentry import init_sentry
+from app.core.error_tracking import init_error_tracking
 
 @asynccontextmanager
 async def lifespan(app):
-    init_sentry()
+    init_error_tracking()
     yield
 
 app = FastAPI(lifespan=lifespan)

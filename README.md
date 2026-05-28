@@ -8,7 +8,7 @@ A full-stack AI application template with FastAPI backend, Next.js frontend, sha
 - `frontend`: Next.js web application
 - `shared`: Python shared utilities and telemetry
 - `telemetry`: OpenTelemetry Collector, Jaeger, Elasticsearch, Kibana optional observability stack
-- `observability`: Sentry and Langfuse self-hosted instructions
+- `observability`: GlitchTip and Langfuse self-hosted instructions
 
 ## Quick Start
 

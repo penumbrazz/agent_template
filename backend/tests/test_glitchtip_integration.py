@@ -1,7 +1,7 @@
 """
 Smoke test: verify the GlitchTip error reporting pipeline.
 
-Phase 1: init_sentry() with the real DSN, send a test exception, verify event_id.
+Phase 1: init_error_tracking() with the real DSN, send a test exception, verify event_id.
 Phase 2: trigger a real 500 through a standalone FastAPI app to verify error handling.
 
 Usage:
@@ -29,7 +29,7 @@ pytestmark = pytest.mark.skipif(
 
 def test_glitchtip_pipeline():
     """Verify the full DSN -> init -> capture -> send pipeline."""
-    from app.core.sentry import init_sentry
+    from app.core.error_tracking import init_error_tracking
 
     # Use a fresh FastAPI instance to avoid polluting the global app
     app = FastAPI()
@@ -38,7 +38,7 @@ def test_glitchtip_pipeline():
     def crash():
         raise RuntimeError("GlitchTip smoke test: backend pipeline verification")
 
-    init_sentry()
+    init_error_tracking()
     sentry_sdk.capture_exception(
         RuntimeError("GlitchTip smoke test: backend pipeline verification")
     )
