@@ -32,3 +32,8 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     user_id: Optional[str] = None
+
+
+class UserLogin(BaseModel):
+    username: str
+    password: str
