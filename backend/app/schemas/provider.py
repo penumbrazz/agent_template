@@ -38,3 +38,15 @@ class ProviderRead(BaseModel):
 
 class ProviderTestRequest(BaseModel):
     model_id: str | None = None
+
+
+class ProviderValidateRequest(BaseModel):
+    base_url: str = Field(..., min_length=1, max_length=500)
+    api_key: str = Field(..., min_length=1)
+    provider_type: ProviderType
+
+
+class ProviderValidateResponse(BaseModel):
+    success: bool
+    latency_ms: int = 0
+    error: str | None = None

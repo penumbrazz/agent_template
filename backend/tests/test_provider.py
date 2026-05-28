@@ -172,3 +172,74 @@ class TestProviderTest:
         assert resp.status_code == 200
         assert resp.json()["success"] is True
         assert "latency_ms" in resp.json()
+
+
+class TestProviderValidate:
+    def test_validate_requires_auth(self, client):
+        resp = client.post(
+            "/api/providers/validate",
+            json={
+                "base_url": "https://api.openai.com",
+                "api_key": "sk-test",
+                "provider_type": "openai_compatible",
+            },
+        )
+        assert resp.status_code == 401
+
+    def test_validate_requires_superuser(self, test_user, client):
+        resp = client.post(
+            "/api/providers/validate",
+            headers=test_user,
+            json={
+                "base_url": "https://api.openai.com",
+                "api_key": "sk-test",
+                "provider_type": "openai_compatible",
+            },
+        )
+        assert resp.status_code == 403
+
+    @patch("app.services.provider.httpx.Client")
+    def test_validate_openai_success(self, mock_client_cls, admin_user, client):
+        mock_resp = MagicMock()
+        mock_resp.raise_for_status = MagicMock()
+        mock_client = MagicMock()
+        mock_client.get.return_value = mock_resp
+        mock_client.__enter__ = MagicMock(return_value=mock_client)
+        mock_client.__exit__ = MagicMock(return_value=False)
+        mock_client_cls.return_value = mock_client
+
+        resp = client.post(
+            "/api/providers/validate",
+            headers=admin_user,
+            json={
+                "base_url": "https://api.openai.com",
+                "api_key": "sk-test-key",
+                "provider_type": "openai_compatible",
+            },
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["success"] is True
+        assert "latency_ms" in data
+
+    @patch("app.services.provider.httpx.Client")
+    def test_validate_connection_failure(self, mock_client_cls, admin_user, client):
+        mock_client = MagicMock()
+        mock_client.get.side_effect = Exception("Connection refused")
+        mock_client.__enter__ = MagicMock(return_value=mock_client)
+        mock_client.__exit__ = MagicMock(return_value=False)
+        mock_client_cls.return_value = mock_client
+
+        resp = client.post(
+            "/api/providers/validate",
+            headers=admin_user,
+            json={
+                "base_url": "https://bad-url.example.com",
+                "api_key": "sk-test-key",
+                "provider_type": "openai_compatible",
+            },
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["success"] is False
+        assert "Connection refused" in data["error"]

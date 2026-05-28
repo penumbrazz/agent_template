@@ -9,6 +9,7 @@ from app.schemas.provider import (
     ProviderRead,
     ProviderTestRequest,
     ProviderUpdate,
+    ProviderValidateRequest,
 )
 from app.services.provider import (
     _mask_key,
@@ -19,6 +20,7 @@ from app.services.provider import (
     list_providers,
     test_provider,
     update_provider,
+    validate_provider,
 )
 
 router = APIRouter(prefix="/providers", tags=["providers"])
@@ -35,6 +37,15 @@ def _to_read(p) -> dict:
         "created_at": p.created_at,
         "updated_at": p.updated_at,
     }
+
+
+@router.post("/validate")
+def validate_provider_endpoint(
+    data: ProviderValidateRequest,
+    current_user: User = Depends(require_superuser),
+):
+    result = validate_provider(data.base_url, data.api_key, data.provider_type.value)
+    return result
 
 
 @router.get("", response_model=list[ProviderRead])

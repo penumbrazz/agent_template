@@ -150,3 +150,40 @@ def test_provider(
     except Exception as e:
         latency_ms = int((time.monotonic() - start) * 1000)
         return {"success": False, "latency_ms": latency_ms, "error": str(e)}
+
+
+def validate_provider(base_url: str, api_key: str, provider_type: str) -> dict:
+    """Validate provider credentials by making a lightweight API call.
+
+    Unlike test_provider, this does not require a saved provider record.
+    """
+    url = base_url.rstrip("/")
+    start = time.monotonic()
+
+    try:
+        with httpx.Client(timeout=15.0) as client:
+            if provider_type == ProviderType.OPENAI_COMPATIBLE.value:
+                resp = client.get(
+                    f"{url}/v1/models",
+                    headers={"Authorization": f"Bearer {api_key}"},
+                )
+            else:
+                resp = client.post(
+                    f"{url}/v1/messages",
+                    headers={
+                        "x-api-key": api_key,
+                        "anthropic-version": "2023-06-01",
+                        "content-type": "application/json",
+                    },
+                    json={
+                        "model": "claude-sonnet-4-20250514",
+                        "messages": [{"role": "user", "content": "Hi"}],
+                        "max_tokens": 1,
+                    },
+                )
+            resp.raise_for_status()
+        latency_ms = int((time.monotonic() - start) * 1000)
+        return {"success": True, "latency_ms": latency_ms, "error": None}
+    except Exception as e:
+        latency_ms = int((time.monotonic() - start) * 1000)
+        return {"success": False, "latency_ms": latency_ms, "error": str(e)}
