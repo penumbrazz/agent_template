@@ -9,11 +9,19 @@ from app.core.config import settings
 from app.core.error_tracking import init_error_tracking
 from app.core.langfuse import init_langfuse, shutdown_langfuse
 from app.core.logging import setup_logging
+from app.db.seed import seed_default_admin
+from app.db.session import SessionLocal
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     setup_logging()
+    # Seed default admin user
+    db = SessionLocal()
+    try:
+        seed_default_admin(db)
+    finally:
+        db.close()
     init_error_tracking()
     langfuse = init_langfuse()
     if langfuse:
