@@ -112,6 +112,32 @@ npm run format && npm run lint
 - ✅ 使用描述性的、一致的命名：`{动作}-{元素类型}`（例如 `save-button`、`cancel-link`、`search-input`）
 - ❌ 不要在交互元素上省略 `data-testid`
 
+### 前端设计系统（DESIGN.md）
+
+⚠️ **进行任何前端页面设计和开发时，必须严格遵循 `DESIGN.md` 中定义的设计系统。**
+
+**强制规则：**
+
+1. **必须先阅读 DESIGN.md** — 在创建组件、修改样式、构建页面之前，先读取 `DESIGN.md` 完整内容
+2. **使用设计 Token** — 颜色、字体、间距、圆角等样式值必须使用 DESIGN.md 中定义的 token，禁止硬编码任意颜色或字体
+3. **颜色体系** — 严格遵循三表面模式：
+   - Canvas 奶油画布 (`#faf9f5`) 作为默认背景
+   - Surface Card 浅奶油卡片 (`#efe9de`) 用于内容卡片
+   - Surface Dark 深色产品面板 (`#181715`) 用于代码编辑器、产品展示等
+4. **字体规范** — 标题使用衬线体（Copernicus / Tiempos Headline / Cormorant Garamond），正文使用无衬线体（StyreneB / Inter），代码使用 JetBrains Mono。标题字重保持 400，负字间距不可省略
+5. **组件规范** — 按钮、卡片、输入框、导航等组件必须参照 DESIGN.md 中 `components` 部分的定义
+6. **间距系统** — 使用 DESIGN.md 定义的 spacing token（4px 基准单位），section 间距 96px
+7. **圆角层级** — 按钮/输入框 8px，内容卡片 12px，Hero 容器 16px，徽章 pill 形
+8. **响应式** — 遵循 Mobile (<768px)、Tablet (768-1024px)、Desktop (1024-1440px)、Wide (>1440px) 四档断点
+
+**禁止事项：**
+
+- 禁止使用冷灰色或纯白作为画布背景（奶油色是品牌核心）
+- 禁止使用蓝色或青色作为品牌主色（珊瑚色 `#cc785c` 是唯一品牌色）
+- 禁止在标题使用粗体（display 字重保持 400）
+- 禁止连续两个相同表面模式（应交替：奶油 → 卡片 → 深色 → 奶油 → 珊瑚 → 深色）
+- 禁止使用 DESIGN.md token 之外的第四种表面色调
+
 ### 响应式架构
 
 ⚠️ 该项目**采用移动优先、组件分离的响应式设计架构**

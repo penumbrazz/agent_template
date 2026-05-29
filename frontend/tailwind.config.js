@@ -12,17 +12,23 @@ export default {
   theme: {
     extend: {
       colors: {
+        /* DESIGN.md project tokens */
         base: withOpacity('--color-bg-base'),
         surface: withOpacity('--color-bg-surface'),
         'text-primary': withOpacity('--color-text-primary'),
         'text-secondary': withOpacity('--color-text-secondary'),
         'text-muted': withOpacity('--color-text-muted'),
         primary: withOpacity('--color-primary'),
+        'primary-active': withOpacity('--color-primary-active'),
         border: withOpacity('--color-border'),
+        error: withOpacity('--color-error'),
+        success: withOpacity('--color-success'),
+
+        /* shadcn/ui semantic mapping to DESIGN.md tokens */
         background: withOpacity('--color-bg-base'),
         foreground: withOpacity('--color-text-primary'),
         card: {
-          DEFAULT: withOpacity('--color-bg-surface'),
+          DEFAULT: withOpacity('--color-bg-base'),
           foreground: withOpacity('--color-text-primary'),
         },
         muted: {
@@ -38,7 +44,7 @@ export default {
           foreground: withOpacity('--color-text-primary'),
         },
         destructive: {
-          DEFAULT: 'rgb(239 68 68)',
+          DEFAULT: withOpacity('--color-error'),
           foreground: 'rgb(255 255 255)',
         },
         popover: {
