@@ -53,10 +53,11 @@ def to_read(p: Provider) -> dict:
 
 
 def _normalize_base_url(url: str) -> str:
-    url = url.rstrip("/")
-    if url.endswith("/v1"):
-        url = url[:-3]
-    return url
+    return url.rstrip("/")
+
+
+def _models_path(provider_type: str) -> str:
+    return "/models"
 
 
 def _timed_request(fn) -> dict:
@@ -119,7 +120,7 @@ def fetch_models(db: Session, provider: Provider) -> list[LLMModel]:
     headers = _build_headers(decrypted_key, provider.type)
 
     client = _get_http_client()
-    resp = client.get(f"{base_url}/v1/models", headers=headers)
+    resp = client.get(f"{base_url}{_models_path(provider.type)}", headers=headers)
     resp.raise_for_status()
 
     remote_ids = set(m["id"] for m in resp.json().get("data", []))
@@ -174,9 +175,9 @@ def test_provider(
     def make_request():
         client = _get_http_client()
         if provider.type == ProviderType.OPENAI_COMPATIBLE.value:
-            resp = client.post(f"{base_url}/v1/chat/completions", headers=headers, json=chat_payload)
+            resp = client.post(f"{base_url}/chat/completions", headers=headers, json=chat_payload)
         else:
-            resp = client.post(f"{base_url}/v1/messages", headers=headers, json=chat_payload)
+            resp = client.post(f"{base_url}/messages", headers=headers, json=chat_payload)
         resp.raise_for_status()
 
     return _timed_request(make_request)
@@ -188,7 +189,7 @@ def validate_provider(base_url: str, api_key: str, provider_type: str) -> dict:
 
     def make_request():
         client = httpx.Client(timeout=15.0)
-        resp = client.get(f"{url}/v1/models", headers=headers)
+        resp = client.get(f"{url}{_models_path(provider_type)}", headers=headers)
         resp.raise_for_status()
         client.close()
 
