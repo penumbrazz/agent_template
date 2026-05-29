@@ -1,6 +1,7 @@
 'use client'
 
 import { SettingsPanel } from '@/components/settings/settings-panel'
+import { AgentChatPanel } from '@/features/agent-chat/agent-chat-panel'
 import { useT } from '@/i18n'
 
 export function HomeContent() {
@@ -16,6 +17,7 @@ export function HomeContent() {
         </p>
       </section>
       <SettingsPanel />
+      <AgentChatPanel />
     </main>
   )
 }
