@@ -12,8 +12,9 @@ import {
 } from '@/components/ui/dialog'
 import { GeneralSettings } from './general-settings'
 import { ModelConfig } from './model-config'
+import { AccountSettings } from './account-settings'
 
-type Tab = 'general' | 'models'
+type Tab = 'general' | 'models' | 'account'
 
 export function SettingsPanel() {
   const [open, setOpen] = useState(false)
@@ -62,10 +63,22 @@ export function SettingsPanel() {
             >
               模型配置
             </button>
+            <button
+              data-testid="tab-account"
+              onClick={() => setActiveTab('account')}
+              className={`text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                activeTab === 'account'
+                  ? 'bg-[#cc785c] text-white'
+                  : 'text-[#6b6560] hover:bg-[#e6dfd8]'
+              }`}
+            >
+              账户
+            </button>
           </nav>
           <div className="flex-1 overflow-y-auto p-6">
             {activeTab === 'general' && <GeneralSettings />}
             {activeTab === 'models' && <ModelConfig />}
+            {activeTab === 'account' && <AccountSettings />}
           </div>
         </div>
       </DialogContent>
