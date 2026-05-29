@@ -4,12 +4,12 @@ import { useState } from 'react'
 import { Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet'
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import { GeneralSettings } from './general-settings'
 import { ModelConfig } from './model-config'
 
@@ -20,8 +20,8 @@ export function SettingsPanel() {
   const [activeTab, setActiveTab] = useState<Tab>('models')
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
         <Button
           variant="ghost"
           size="icon"
@@ -30,20 +30,23 @@ export function SettingsPanel() {
         >
           <Settings className="h-5 w-5" />
         </Button>
-      </SheetTrigger>
-      <SheetContent className="w-[700px] sm:max-w-[700px] p-0" data-testid="settings-panel">
-        <SheetHeader className="px-6 pt-6 pb-4 border-b">
-          <SheetTitle>设置</SheetTitle>
-        </SheetHeader>
-        <div className="flex h-[calc(100vh-73px)]">
-          <nav className="w-40 border-r p-4 flex flex-col gap-1">
+      </DialogTrigger>
+      <DialogContent
+        className="flex flex-col max-w-[700px] w-[700px] gap-0 p-0 h-[80vh] rounded-xl"
+        data-testid="settings-panel"
+      >
+        <DialogHeader className="px-6 pt-6 pb-4 border-b">
+          <DialogTitle>设置</DialogTitle>
+        </DialogHeader>
+        <div className="flex min-h-0 flex-1 overflow-hidden">
+          <nav className="w-40 border-r p-4 flex flex-col gap-1 bg-[#efe9de]">
             <button
               data-testid="tab-general"
               onClick={() => setActiveTab('general')}
               className={`text-left px-3 py-2 rounded-md text-sm transition-colors ${
                 activeTab === 'general'
-                  ? 'bg-primary text-white'
-                  : 'text-text-secondary hover:bg-surface'
+                  ? 'bg-[#cc785c] text-white'
+                  : 'text-[#6b6560] hover:bg-[#e6dfd8]'
               }`}
             >
               通用设置
@@ -53,8 +56,8 @@ export function SettingsPanel() {
               onClick={() => setActiveTab('models')}
               className={`text-left px-3 py-2 rounded-md text-sm transition-colors ${
                 activeTab === 'models'
-                  ? 'bg-primary text-white'
-                  : 'text-text-secondary hover:bg-surface'
+                  ? 'bg-[#cc785c] text-white'
+                  : 'text-[#6b6560] hover:bg-[#e6dfd8]'
               }`}
             >
               模型配置
@@ -65,7 +68,7 @@ export function SettingsPanel() {
             {activeTab === 'models' && <ModelConfig />}
           </div>
         </div>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   )
 }
