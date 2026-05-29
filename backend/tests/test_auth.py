@@ -97,3 +97,115 @@ class TestAuthMe:
     def test_get_me_unauthenticated(self, client):
         resp = client.get("/api/auth/me")
         assert resp.status_code == 401
+
+
+from app.db.seed import seed_default_admin
+from app.db.session import SessionLocal
+
+
+class TestAuthLoginCookie:
+    def test_login_sets_refresh_cookie(self, client):
+        client.post(
+            "/api/auth/register",
+            json={
+                "username": "cookieuser",
+                "email": "cookie@example.com",
+                "password": "password123",
+            },
+        )
+        resp = client.post(
+            "/api/auth/login",
+            json={"username": "cookieuser", "password": "password123"},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "access_token" in data
+        assert "expires_in" in data
+        assert data["token_type"] == "bearer"
+        cookies = resp.cookies
+        assert "refresh_token" in cookies
+
+
+class TestAuthRefresh:
+    def test_refresh_success(self, client):
+        client.post(
+            "/api/auth/register",
+            json={
+                "username": "refreshuser",
+                "email": "refresh@example.com",
+                "password": "password123",
+            },
+        )
+        client.post(
+            "/api/auth/login",
+            json={"username": "refreshuser", "password": "password123"},
+        )
+        resp = client.post("/api/auth/refresh")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "access_token" in data
+        assert data["token_type"] == "bearer"
+        assert "expires_in" in data
+
+    def test_refresh_without_cookie(self, client):
+        resp = client.post("/api/auth/refresh")
+        assert resp.status_code == 401
+
+    def test_refresh_with_invalid_token(self, client):
+        client.cookies.set("refresh_token", "invalid-token", domain="testserver")
+        resp = client.post("/api/auth/refresh")
+        assert resp.status_code == 401
+
+
+class TestAuthLogout:
+    def test_logout_clears_cookie(self, client):
+        client.post(
+            "/api/auth/register",
+            json={
+                "username": "logoutuser",
+                "email": "logout@example.com",
+                "password": "password123",
+            },
+        )
+        client.post(
+            "/api/auth/login",
+            json={"username": "logoutuser", "password": "password123"},
+        )
+        resp = client.post("/api/auth/logout")
+        assert resp.status_code == 200
+        assert resp.json()["message"] == "Logged out"
+
+
+class TestSeedDefaultAdmin:
+    def test_seed_creates_admin(self):
+        import os
+        from sqlalchemy import create_engine
+        from sqlalchemy.orm import sessionmaker
+
+        from app.models.base import Base
+        from app.models.user import User
+
+        test_engine = create_engine(
+            "sqlite:///./test_seed.db", connect_args={"check_same_thread": False}
+        )
+        Base.metadata.create_all(bind=test_engine)
+        TestSession = sessionmaker(
+            autocommit=False, autoflush=False, bind=test_engine
+        )
+        test_db = TestSession()
+        try:
+            seed_default_admin(test_db)
+            admin = test_db.query(User).filter(User.username == "admin").first()
+            assert admin is not None
+            assert admin.is_superuser is True
+            assert admin.is_active is True
+            seed_default_admin(test_db)
+            count = test_db.query(User).filter(User.username == "admin").count()
+            assert count == 1
+        finally:
+            test_db.close()
+            Base.metadata.drop_all(bind=test_engine)
+            try:
+                os.remove("test_seed.db")
+            except OSError:
+                pass
