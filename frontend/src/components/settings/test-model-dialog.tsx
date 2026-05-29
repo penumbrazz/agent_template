@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { useT, translate } from '@/i18n'
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react'
 
 interface TestModelDialogProps {
@@ -43,6 +44,7 @@ export function TestModelDialog({
     error: string | null
   } | null>(null)
   const [loading, setLoading] = useState(false)
+  const t = useT()
 
   const handleTest = async () => {
     if (!selectedModelId) return
@@ -52,7 +54,7 @@ export function TestModelDialog({
       const res = await providersApi.test(providerId, selectedModelId)
       setResult(res)
     } catch {
-      setResult({ success: false, latency_ms: 0, error: '请求失败' })
+      setResult({ success: false, latency_ms: 0, error: translate('settings.testModel.requestFailed') })
     } finally {
       setLoading(false)
     }
@@ -62,14 +64,14 @@ export function TestModelDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent data-testid="test-model-dialog">
         <DialogHeader>
-          <DialogTitle>测试模型连通性</DialogTitle>
+          <DialogTitle>{t('settings.testModel.title')}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label>选择模型</Label>
+            <Label>{t('settings.testModel.selectModel')}</Label>
             <Select value={selectedModelId} onValueChange={setSelectedModelId}>
               <SelectTrigger data-testid="test-model-select">
-                <SelectValue placeholder="选择模型" />
+                <SelectValue placeholder={t('settings.testModel.selectModel')} />
               </SelectTrigger>
               <SelectContent>
                 {models.map((m) => (
@@ -96,8 +98,8 @@ export function TestModelDialog({
               )}
               <span>
                 {result.success
-                  ? `连接成功 (${result.latency_ms}ms)`
-                  : `连接失败: ${result.error}`}
+                  ? translate('settings.testModel.connectionSuccessMs', { latencyMs: result.latency_ms })
+                  : translate('settings.testModel.connectionFailedError', { error: result.error })}
               </span>
             </div>
           )}
@@ -111,7 +113,7 @@ export function TestModelDialog({
             }}
             data-testid="test-close"
           >
-            关闭
+            {t('common.close')}
           </Button>
           <Button
             onClick={handleTest}
@@ -119,7 +121,7 @@ export function TestModelDialog({
             data-testid="test-run"
           >
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            测试
+            {t('settings.testModel.test')}
           </Button>
         </DialogFooter>
       </DialogContent>

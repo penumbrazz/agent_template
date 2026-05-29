@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 import type { ModelCreate } from '@/types/model'
+import { useT, translate } from '@/i18n'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -30,6 +31,7 @@ export function ModelFormDialog({
   const [modelId, setModelId] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [loading, setLoading] = useState(false)
+  const t = useT()
 
   const handleSubmit = async () => {
     if (!modelId) return
@@ -44,7 +46,7 @@ export function ModelFormDialog({
       setModelId('')
       setDisplayName('')
     } catch (e) {
-      const message = e instanceof Error ? e.message : '添加模型失败，请稍后重试'
+      const message = e instanceof Error ? e.message : translate('settings.modelConfig.addModelFailed')
       toast.error(message)
     } finally {
       setLoading(false)
@@ -55,7 +57,7 @@ export function ModelFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent data-testid="model-form-dialog">
         <DialogHeader>
-          <DialogTitle>手动添加模型</DialogTitle>
+          <DialogTitle>{t('settings.modelConfig.addModelTitle')}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
@@ -69,7 +71,7 @@ export function ModelFormDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="display-name">显示名称（可选）</Label>
+            <Label htmlFor="display-name">{t('settings.modelConfig.displayName')}</Label>
             <Input
               id="display-name"
               data-testid="display-name-input"
@@ -85,14 +87,14 @@ export function ModelFormDialog({
             onClick={() => onOpenChange(false)}
             data-testid="model-cancel"
           >
-            取消
+            {t('common.cancel')}
           </Button>
           <Button
             onClick={handleSubmit}
             disabled={loading || !modelId}
             data-testid="model-submit"
           >
-            {loading ? '添加中...' : '添加'}
+            {loading ? t('settings.modelConfig.addingModel') : t('settings.modelConfig.addModel')}
           </Button>
         </DialogFooter>
       </DialogContent>
