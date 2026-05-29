@@ -1,6 +1,6 @@
 'use client'
 
-import { MessageCircle, Menu, Plus, PanelRightOpen, Minus, X, Send } from 'lucide-react'
+import { MessageCircle, Menu, Plus, PanelRightOpen, Minus, Send } from 'lucide-react'
 import { useState } from 'react'
 
 import { cn } from '@/lib/utils'
@@ -86,7 +86,7 @@ export function AgentChatPanel() {
       data-testid="agent-chat-panel"
       className={cn(
         'fixed z-40 flex flex-col overflow-hidden border border-border bg-base shadow-2xl',
-        isDocked ? 'inset-y-0 right-0 rounded-none' : 'rounded-xl',
+        isDocked ? 'top-12 bottom-0 right-0 rounded-none' : 'rounded-xl',
       )}
       style={
         isDocked
@@ -102,7 +102,7 @@ export function AgentChatPanel() {
       >
         <button
           data-testid="agent-chat-menu-button"
-          onClick={openHistory}
+          onClick={() => (isHistoryOpen ? closeHistory() : openHistory())}
           className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-surface transition-colors"
           type="button"
         >
@@ -171,24 +171,14 @@ export function AgentChatPanel() {
           >
             <div className="flex items-center justify-between border-b border-border px-3 py-2.5">
               <span className="text-sm font-medium">历史对话</span>
-              <div className="flex items-center gap-1">
-                <button
-                  data-testid="agent-chat-history-new-conversation-button"
-                  onClick={startNewConversation}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-surface transition-colors"
-                  type="button"
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
-                <button
-                  data-testid="agent-chat-history-close-button"
-                  onClick={closeHistory}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-surface transition-colors"
-                  type="button"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
+              <button
+                data-testid="agent-chat-history-new-conversation-button"
+                onClick={startNewConversation}
+                className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-surface transition-colors"
+                type="button"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
             </div>
             <div className="overflow-y-auto p-2">
               {sessions.map(session => (
