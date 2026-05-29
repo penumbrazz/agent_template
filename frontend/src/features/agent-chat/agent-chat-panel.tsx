@@ -167,7 +167,7 @@ export function AgentChatPanel() {
           data-testid="agent-chat-history-overlay"
           onClick={closeHistory}
           className={cn(
-            'absolute inset-0 z-10 bg-black/20 transition-opacity duration-200',
+            'absolute inset-0 z-10 bg-black/20 transition-opacity duration-300',
             isHistoryOpen ? 'opacity-100' : 'pointer-events-none opacity-0',
           )}
         />
@@ -176,7 +176,7 @@ export function AgentChatPanel() {
         <div
           data-testid="agent-chat-history-drawer"
           className={cn(
-            'absolute inset-y-0 left-0 z-20 w-64 border-r border-border bg-base shadow-lg transition-transform duration-200',
+            'absolute inset-y-0 left-0 z-20 w-64 border-r border-border bg-base shadow-lg transition-transform duration-300',
             isHistoryOpen ? 'translate-x-0' : '-translate-x-full',
           )}
           >
