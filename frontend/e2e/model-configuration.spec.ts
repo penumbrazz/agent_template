@@ -249,7 +249,10 @@ test.describe('Model Configuration', () => {
     await toggleBtn.click()
 
     // Wait for SWR to update and verify via API
-    await page.waitForTimeout(500)
+    await expect.poll(async () => {
+      const models = await apiGet('/api/models/all')
+      return models.find((m: { id: string }) => m.id === model.id)
+    }).toHaveProperty('is_enabled', true)
     const models = await apiGet('/api/models/all')
     const updated = models.find((m: { id: string }) => m.id === model.id)
     expect(updated.is_enabled).toBe(true)
@@ -328,7 +331,10 @@ test.describe('Model Configuration', () => {
     await deleteBtn.click()
 
     // Wait for update
-    await page.waitForTimeout(500)
+    await expect.poll(async () => {
+      const models = await apiGet('/api/models/all')
+      return models.find((m: { id: string }) => m.id === model.id)
+    }).toBeUndefined()
 
     // Verify model deleted via API
     const models = await apiGet('/api/models/all')
@@ -359,7 +365,10 @@ test.describe('Model Configuration', () => {
     await deleteBtn.click()
 
     // Wait for update
-    await page.waitForTimeout(500)
+    await expect.poll(async () => {
+      const providers = await apiGet('/api/providers')
+      return providers.find((p: { id: string }) => p.id === provider.id)
+    }).toBeUndefined()
 
     // Verify both provider and model are gone
     const providers = await apiGet('/api/providers')
@@ -414,7 +423,10 @@ test.describe('Model Configuration', () => {
     await option.click()
 
     // Wait for update
-    await page.waitForTimeout(500)
+    await expect.poll(async () => {
+      const settings = await apiGet('/api/settings')
+      return settings.find((s: { key: string }) => s.key === 'default_model_id')
+    }).toHaveProperty('value', model.id)
 
     // Verify setting was saved
     const settings = await apiGet('/api/settings')

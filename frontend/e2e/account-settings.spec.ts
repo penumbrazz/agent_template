@@ -1,8 +1,35 @@
 import { test, expect } from '@playwright/test'
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
+
 test.describe('Account Settings', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/')
+    // Register and login via API
+    const registerRes = await fetch(`${API_BASE}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: 'testuser',
+        email: 'test@example.com',
+        password: 'testpassword123',
+      }),
+    })
+
+    // Register may fail if user already exists, that's fine
+    if (registerRes.ok) {
+      // Login to get cookies set
+      await fetch(`${API_BASE}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: 'testuser', password: 'testpassword123' }),
+      })
+    }
+
+    // Login via the login page to establish session
+    await page.goto('/login')
+    await page.getByTestId('login-username-input').fill('testuser')
+    await page.getByTestId('login-password-input').fill('testpassword123')
+    await page.getByTestId('login-submit-button').click()
     await page.waitForURL('/')
 
     // Open settings panel

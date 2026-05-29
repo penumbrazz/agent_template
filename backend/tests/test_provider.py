@@ -191,15 +191,15 @@ class TestProviderTest:
         )
         provider_id = create_resp.json()["id"]
 
-        from tests.conftest import TestSessionLocal
-
-        from app.models.llm_model import LLMModel
-
-        db = TestSessionLocal()
-        model = LLMModel(provider_id=provider_id, model_id="gpt-4o")
-        db.add(model)
-        db.commit()
-        db.close()
+        # Create a model via API for testing
+        client.post(
+            "/api/models",
+            headers=admin_user,
+            json={
+                "provider_id": provider_id,
+                "model_id": "gpt-4o",
+            },
+        )
 
         mock_resp = MagicMock()
         mock_resp.raise_for_status = MagicMock()

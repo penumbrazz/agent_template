@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from app.core.rate_limit import limiter
 from app.db.session import get_db
 from app.main import app
 from app.models.base import Base
@@ -28,8 +29,10 @@ app.dependency_overrides[get_db] = override_get_db
 @pytest.fixture(autouse=True)
 def setup_db():
     Base.metadata.create_all(bind=engine)
+    limiter.reset()
     yield
     Base.metadata.drop_all(bind=engine)
+    limiter.reset()
 
 
 @pytest.fixture

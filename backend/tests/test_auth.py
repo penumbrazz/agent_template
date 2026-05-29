@@ -52,6 +52,17 @@ class TestAuthRegister:
         )
         assert resp.status_code == 409
 
+    def test_register_password_too_short(self, client):
+        resp = client.post(
+            "/api/auth/register",
+            json={
+                "username": "shortpw",
+                "email": "short@example.com",
+                "password": "short",
+            },
+        )
+        assert resp.status_code == 422
+
 
 class TestAuthLogin:
     def test_login_success(self, client):

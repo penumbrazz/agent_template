@@ -34,10 +34,15 @@ dependencies = [
     "langfuse>=2.0.0",
     "sentry-sdk[fastapi]>=2.0.0",
     "agent-template-shared",
+    "slowapi>=0.1.9",
 ]
 
 [tool.uv.sources]
 agent-template-shared = { path = "../shared", editable = true }
+
+[[tool.uv.index]]
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+default = true
 
 [dependency-groups]
 dev = [

@@ -16,19 +16,10 @@ const defaultConfig: RuntimeConfig = {
   appVersion: process.env.NEXT_PUBLIC_APP_VERSION || 'dev',
 }
 
-let cachedConfig: RuntimeConfig | null = null
-
 export function getRuntimeConfigSync(): RuntimeConfig {
-  if (cachedConfig) return cachedConfig
   return defaultConfig
 }
 
 export function getApiBaseUrl(): string {
   return getRuntimeConfigSync().apiUrl
-}
-
-export async function fetchRuntimeConfig(): Promise<RuntimeConfig> {
-  if (cachedConfig) return cachedConfig
-  cachedConfig = defaultConfig
-  return cachedConfig
 }

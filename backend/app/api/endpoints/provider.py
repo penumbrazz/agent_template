@@ -12,31 +12,18 @@ from app.schemas.provider import (
     ProviderValidateRequest,
 )
 from app.services.provider import (
-    _mask_key,
     create_provider,
     delete_provider,
     fetch_models,
     get_provider,
     list_providers,
     test_provider,
+    to_read as provider_to_read,
     update_provider,
     validate_provider,
 )
 
 router = APIRouter(prefix="/providers", tags=["providers"])
-
-
-def _to_read(p) -> dict:
-    return {
-        "id": p.id,
-        "name": p.name,
-        "type": p.type,
-        "base_url": p.base_url,
-        "api_key_masked": _mask_key(p.encrypted_api_key),
-        "is_active": p.is_active,
-        "created_at": p.created_at,
-        "updated_at": p.updated_at,
-    }
 
 
 @router.post("/validate")
@@ -54,7 +41,7 @@ def list_all_providers(
     current_user: User = Depends(get_current_user),
 ):
     providers = list_providers(db)
-    return [_to_read(p) for p in providers]
+    return [provider_to_read(p) for p in providers]
 
 
 @router.post("", response_model=ProviderRead, status_code=status.HTTP_201_CREATED)
@@ -64,7 +51,7 @@ def create_new_provider(
     current_user: User = Depends(require_superuser),
 ):
     provider = create_provider(db, data)
-    return _to_read(provider)
+    return provider_to_read(provider)
 
 
 @router.put("/{provider_id}", response_model=ProviderRead)
@@ -78,7 +65,7 @@ def update_existing_provider(
     if not provider:
         raise HTTPException(status_code=404, detail="Provider not found")
     provider = update_provider(db, provider, data)
-    return _to_read(provider)
+    return provider_to_read(provider)
 
 
 @router.delete("/{provider_id}", status_code=status.HTTP_204_NO_CONTENT)

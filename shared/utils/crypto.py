@@ -36,10 +36,13 @@ _legacy_attachment_iv = b"1234567890123456"
 
 
 def _get_encryption_key() -> bytes:
-    """Load or return cached AES-256 key from GIT_TOKEN_AES_KEY env var."""
+    """Load or return cached AES-256 key from ENCRYPTION_KEY env var."""
     global _aes_key
     if _aes_key is None:
-        key = os.environ.get("GIT_TOKEN_AES_KEY", "12345678901234567890123456789012")
+        key = os.environ.get(
+            "ENCRYPTION_KEY",
+            os.environ.get("GIT_TOKEN_AES_KEY", "12345678901234567890123456789012"),
+        )
         _aes_key = key.encode("utf-8")
         logger.info("Loaded encryption key from environment variables")
     return _aes_key
@@ -50,7 +53,8 @@ def _get_attachment_encryption_key() -> bytes:
     global _attachment_aes_key
     if _attachment_aes_key is None:
         key = os.environ.get(
-            "ATTACHMENT_AES_KEY", "12345678901234567890123456789012"
+            "ATTACHMENT_AES_KEY",
+            os.environ.get("ENCRYPTION_KEY", "12345678901234567890123456789012"),
         )
         _attachment_aes_key = key.encode("utf-8")
         logger.info("Loaded attachment encryption key from environment variables")

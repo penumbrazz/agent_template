@@ -3,8 +3,22 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from app.models.llm_model import LLMModel
-from app.models.setting import Setting
 from app.schemas.llm_model import ModelCreate, ModelUpdate
+from app.services.setting import clear_default_model_if_matches
+
+
+def to_read(m: LLMModel) -> dict:
+    return {
+        "id": m.id,
+        "provider_id": m.provider_id,
+        "model_id": m.model_id,
+        "display_name": m.display_name,
+        "is_enabled": m.is_enabled,
+        "extra_config": m.extra_config,
+        "provider_name": m.provider.name if m.provider else None,
+        "created_at": m.created_at,
+        "updated_at": m.updated_at,
+    }
 
 
 def list_enabled_models(db: Session) -> list[LLMModel]:
@@ -47,9 +61,7 @@ def update_model(db: Session, model: LLMModel, data: ModelUpdate) -> LLMModel:
 
 
 def delete_model(db: Session, model: LLMModel) -> None:
-    setting = db.query(Setting).filter(Setting.key == "default_model_id").first()
-    if setting and setting.value == model.id:
-        setting.value = ""
+    clear_default_model_if_matches(db, model.id)
     db.delete(model)
     db.commit()
 
@@ -57,9 +69,7 @@ def delete_model(db: Session, model: LLMModel) -> None:
 def toggle_model(db: Session, model: LLMModel) -> LLMModel:
     model.is_enabled = not model.is_enabled
     if not model.is_enabled:
-        setting = db.query(Setting).filter(Setting.key == "default_model_id").first()
-        if setting and setting.value == model.id:
-            setting.value = ""
+        clear_default_model_if_matches(db, model.id)
     db.commit()
     db.refresh(model)
     return model

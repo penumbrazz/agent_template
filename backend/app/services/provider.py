@@ -6,9 +6,30 @@ from sqlalchemy.orm import Session
 
 from app.models.llm_model import LLMModel
 from app.models.provider import Provider
-from app.models.setting import Setting
 from app.schemas.provider import ProviderCreate, ProviderType, ProviderUpdate
+from app.services.setting import clear_default_model_if_unavailable
 from shared.utils.crypto import decrypt_api_key, encrypt_api_key, mask_api_key
+
+_http_client: Optional[httpx.Client] = None
+
+
+def _get_http_client() -> httpx.Client:
+    global _http_client
+    if _http_client is None or _http_client.is_closed:
+        _http_client = httpx.Client(timeout=30.0)
+    return _http_client
+
+
+def _build_headers(api_key: str, provider_type: str) -> dict[str, str]:
+    headers: dict[str, str] = {}
+    if not api_key:
+        return headers
+    if provider_type == ProviderType.OPENAI_COMPATIBLE.value:
+        headers["Authorization"] = f"Bearer {api_key}"
+    else:
+        headers["x-api-key"] = api_key
+        headers["anthropic-version"] = "2023-06-01"
+    return headers
 
 
 def _mask_key(encrypted_key: str) -> str:
@@ -18,11 +39,35 @@ def _mask_key(encrypted_key: str) -> str:
     return mask_api_key(decrypted)
 
 
+def to_read(p: Provider) -> dict:
+    return {
+        "id": p.id,
+        "name": p.name,
+        "type": p.type,
+        "base_url": p.base_url,
+        "api_key_masked": _mask_key(p.encrypted_api_key),
+        "is_active": p.is_active,
+        "created_at": p.created_at,
+        "updated_at": p.updated_at,
+    }
+
+
 def _normalize_base_url(url: str) -> str:
     url = url.rstrip("/")
     if url.endswith("/v1"):
         url = url[:-3]
     return url
+
+
+def _timed_request(fn) -> dict:
+    start = time.monotonic()
+    try:
+        fn()
+        latency_ms = int((time.monotonic() - start) * 1000)
+        return {"success": True, "latency_ms": latency_ms, "error": None}
+    except Exception as e:
+        latency_ms = int((time.monotonic() - start) * 1000)
+        return {"success": False, "latency_ms": latency_ms, "error": str(e)}
 
 
 def list_providers(db: Session) -> list[Provider]:
@@ -68,28 +113,14 @@ def delete_provider(db: Session, provider: Provider) -> None:
     db.commit()
 
 
-def _clear_default_model_if_deleted(db: Session, model_ids: set[str]) -> None:
-    setting = db.query(Setting).filter(Setting.key == "default_model_id").first()
-    if setting and setting.value and setting.value not in model_ids:
-        setting.value = ""
-
-
 def fetch_models(db: Session, provider: Provider) -> list[LLMModel]:
     decrypted_key = decrypt_api_key(provider.encrypted_api_key)
-
     base_url = _normalize_base_url(provider.base_url)
-    headers: dict[str, str] = {}
+    headers = _build_headers(decrypted_key, provider.type)
 
-    if decrypted_key:
-        if provider.type == ProviderType.OPENAI_COMPATIBLE.value:
-            headers["Authorization"] = f"Bearer {decrypted_key}"
-        else:
-            headers["x-api-key"] = decrypted_key
-            headers["anthropic-version"] = "2023-06-01"
-
-    with httpx.Client(timeout=30.0) as client:
-        resp = client.get(f"{base_url}/v1/models", headers=headers)
-        resp.raise_for_status()
+    client = _get_http_client()
+    resp = client.get(f"{base_url}/v1/models", headers=headers)
+    resp.raise_for_status()
 
     remote_ids = set(m["id"] for m in resp.json().get("data", []))
 
@@ -98,14 +129,12 @@ def fetch_models(db: Session, provider: Provider) -> list[LLMModel]:
     )
     existing_ids = {m.model_id for m in existing_models}
 
-    # Remove models no longer present in the remote API
     for model in existing_models:
         if model.model_id not in remote_ids:
             db.delete(model)
 
-    # Clear default_model_id if the referenced model was removed
     remaining_model_ids = {m.id for m in existing_models if m.model_id in remote_ids}
-    _clear_default_model_if_deleted(db, remaining_model_ids)
+    clear_default_model_if_unavailable(db, remaining_model_ids)
 
     new_models = []
     for mid in remote_ids:
@@ -128,91 +157,39 @@ def test_provider(
     if not model_id:
         model = db.query(LLMModel).filter(LLMModel.provider_id == provider.id).first()
         if not model:
-            return {
-                "success": False,
-                "latency_ms": 0,
-                "error": "No models available for testing",
-            }
+            return {"success": False, "latency_ms": 0, "error": "No models available for testing"}
         model_id = model.model_id
 
     base_url = _normalize_base_url(provider.base_url)
-    headers: dict[str, str] = {}
+    headers = _build_headers(decrypted_key, provider.type)
+    if provider.type != ProviderType.OPENAI_COMPATIBLE.value:
+        headers["content-type"] = "application/json"
 
-    if decrypted_key:
+    chat_payload = {
+        "model": model_id,
+        "messages": [{"role": "user", "content": "Hi"}],
+        "max_tokens": 5,
+    }
+
+    def make_request():
+        client = _get_http_client()
         if provider.type == ProviderType.OPENAI_COMPATIBLE.value:
-            headers["Authorization"] = f"Bearer {decrypted_key}"
+            resp = client.post(f"{base_url}/v1/chat/completions", headers=headers, json=chat_payload)
         else:
-            headers["x-api-key"] = decrypted_key
-            headers["anthropic-version"] = "2023-06-01"
-            headers["content-type"] = "application/json"
+            resp = client.post(f"{base_url}/v1/messages", headers=headers, json=chat_payload)
+        resp.raise_for_status()
 
-    start = time.monotonic()
-
-    try:
-        with httpx.Client(timeout=30.0) as client:
-            if provider.type == ProviderType.OPENAI_COMPATIBLE.value:
-                resp = client.post(
-                    f"{base_url}/v1/chat/completions",
-                    headers=headers,
-                    json={
-                        "model": model_id,
-                        "messages": [{"role": "user", "content": "Hi"}],
-                        "max_tokens": 5,
-                    },
-                )
-            else:
-                resp = client.post(
-                    f"{base_url}/v1/messages",
-                    headers=headers,
-                    json={
-                        "model": model_id,
-                        "messages": [{"role": "user", "content": "Hi"}],
-                        "max_tokens": 5,
-                    },
-                )
-            resp.raise_for_status()
-        latency_ms = int((time.monotonic() - start) * 1000)
-        return {"success": True, "latency_ms": latency_ms, "error": None}
-    except Exception as e:
-        latency_ms = int((time.monotonic() - start) * 1000)
-        return {"success": False, "latency_ms": latency_ms, "error": str(e)}
+    return _timed_request(make_request)
 
 
 def validate_provider(base_url: str, api_key: str, provider_type: str) -> dict:
-    """Validate provider credentials by making a lightweight API call.
-
-    Unlike test_provider, this does not require a saved provider record.
-    """
     url = _normalize_base_url(base_url)
-    start = time.monotonic()
+    headers = _build_headers(api_key, provider_type)
 
-    try:
-        with httpx.Client(timeout=15.0) as client:
-            if provider_type == ProviderType.OPENAI_COMPATIBLE.value:
-                headers: dict[str, str] = {}
-                if api_key:
-                    headers["Authorization"] = f"Bearer {api_key}"
-                resp = client.get(
-                    f"{url}/v1/models",
-                    headers=headers,
-                )
-            else:
-                headers = {"content-type": "application/json"}
-                if api_key:
-                    headers["x-api-key"] = api_key
-                headers["anthropic-version"] = "2023-06-01"
-                resp = client.post(
-                    f"{url}/v1/messages",
-                    headers=headers,
-                    json={
-                        "model": "claude-sonnet-4-20250514",
-                        "messages": [{"role": "user", "content": "Hi"}],
-                        "max_tokens": 1,
-                    },
-                )
-            resp.raise_for_status()
-        latency_ms = int((time.monotonic() - start) * 1000)
-        return {"success": True, "latency_ms": latency_ms, "error": None}
-    except Exception as e:
-        latency_ms = int((time.monotonic() - start) * 1000)
-        return {"success": False, "latency_ms": latency_ms, "error": str(e)}
+    def make_request():
+        client = httpx.Client(timeout=15.0)
+        resp = client.get(f"{url}/v1/models", headers=headers)
+        resp.raise_for_status()
+        client.close()
+
+    return _timed_request(make_request)

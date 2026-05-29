@@ -2,7 +2,7 @@
 
 import React, { createContext, useCallback, useEffect, useState } from 'react'
 
-import apiClient, { setAccessToken } from '@/apis/client'
+import apiClient, { setAccessToken, setOnAuthFailure } from '@/apis/client'
 
 export interface AuthUser {
   id: string
@@ -26,6 +26,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
+  const logout = useCallback(async () => {
+    await apiClient.post('/api/auth/logout')
+    setAccessToken(null)
+    setUser(null)
+  }, [])
+
+  useEffect(() => {
+    setOnAuthFailure(() => logout)
+    return () => setOnAuthFailure(null)
+  }, [logout])
+
   useEffect(() => {
     apiClient
       .post<AuthUser>('/api/auth/refresh')
@@ -48,12 +59,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAccessToken(tokenData.access_token)
     const me = await apiClient.get<AuthUser>('/api/auth/me')
     setUser(me)
-  }, [])
-
-  const logout = useCallback(async () => {
-    await apiClient.post('/api/auth/logout')
-    setAccessToken(null)
-    setUser(null)
   }, [])
 
   return (

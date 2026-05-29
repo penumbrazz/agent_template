@@ -56,6 +56,11 @@ class Settings(BaseSettings):
                 "SECRET_KEY uses an insecure default. Change it before deploying.",
                 stacklevel=2,
             )
+        if self.ENVIRONMENT != "development" and self.ENCRYPTION_KEY == "12345678901234567890123456789012":
+            raise ValueError(
+                "ENCRYPTION_KEY is set to insecure default. "
+                "Set a strong ENCRYPTION_KEY in production."
+            )
 
 
 @lru_cache

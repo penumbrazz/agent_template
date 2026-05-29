@@ -40,14 +40,14 @@ export function SettingsPanel() {
           <DialogTitle>设置</DialogTitle>
         </DialogHeader>
         <div className="flex min-h-0 flex-1 overflow-hidden">
-          <nav className="w-40 border-r p-4 flex flex-col gap-1 bg-[#efe9de]">
+          <nav className="w-40 border-r p-4 flex flex-col gap-1 bg-surface">
             <button
               data-testid="tab-account"
               onClick={() => setActiveTab('account')}
               className={`text-left px-3 py-2 rounded-md text-sm transition-colors ${
                 activeTab === 'account'
-                  ? 'bg-[#cc785c] text-white'
-                  : 'text-[#6b6560] hover:bg-[#e6dfd8]'
+                  ? 'bg-primary text-white'
+                  : 'text-text-muted hover:bg-border'
               }`}
             >
               账户
@@ -57,8 +57,8 @@ export function SettingsPanel() {
               onClick={() => setActiveTab('general')}
               className={`text-left px-3 py-2 rounded-md text-sm transition-colors ${
                 activeTab === 'general'
-                  ? 'bg-[#cc785c] text-white'
-                  : 'text-[#6b6560] hover:bg-[#e6dfd8]'
+                  ? 'bg-primary text-white'
+                  : 'text-text-muted hover:bg-border'
               }`}
             >
               通用设置
@@ -68,8 +68,8 @@ export function SettingsPanel() {
               onClick={() => setActiveTab('models')}
               className={`text-left px-3 py-2 rounded-md text-sm transition-colors ${
                 activeTab === 'models'
-                  ? 'bg-[#cc785c] text-white'
-                  : 'text-[#6b6560] hover:bg-[#e6dfd8]'
+                  ? 'bg-primary text-white'
+                  : 'text-text-muted hover:bg-border'
               }`}
             >
               模型配置

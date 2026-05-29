@@ -21,6 +21,12 @@ export function getAccessToken(): string | null {
   return accessToken
 }
 
+let onAuthFailure: (() => void) | null = null
+
+export function setOnAuthFailure(callback: (() => void) | null): void {
+  onAuthFailure = callback
+}
+
 let refreshPromise: Promise<boolean> | null = null
 
 class APIClient {
@@ -90,6 +96,7 @@ class APIClient {
         throw new ApiError(errorText, retryResponse.status)
       }
       accessToken = null
+      onAuthFailure?.()
     }
 
     if (!response.ok) {

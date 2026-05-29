@@ -1,14 +1,18 @@
 from contextlib import asynccontextmanager
 
 import structlog
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from slowapi.errors import RateLimitExceeded
+from slowapi import _rate_limit_exceeded_handler
 
 from app.api.router import api_router
 from app.core.config import settings
 from app.core.error_tracking import init_error_tracking
 from app.core.langfuse import init_langfuse, shutdown_langfuse
 from app.core.logging import setup_logging
+from app.core.rate_limit import limiter
 from app.db.seed import seed_default_admin
 from app.db.session import SessionLocal
 
@@ -46,12 +50,15 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.BACKEND_CORS_ORIGINS,
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type"],
     )
 
     app.include_router(api_router, prefix=settings.API_PREFIX)
