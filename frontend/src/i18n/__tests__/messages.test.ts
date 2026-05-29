@@ -1,5 +1,4 @@
 import { translate, LOCALES } from '../messages'
-import type { TranslationKey } from '../messages'
 
 // Mock locale-store before messages imports it
 jest.mock('../locale-store', () => ({
