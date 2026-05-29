@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
 import { useAuth } from '@/features/auth/use-auth'
@@ -13,10 +13,11 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  if (!isLoading && isAuthenticated) {
-    router.replace('/')
-    return null
-  }
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.replace('/')
+    }
+  }, [isAuthenticated, isLoading, router])
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
