@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.models.llm_model import LLMModel
 from app.models.provider import Provider
+from app.models.setting import Setting
 from app.schemas.provider import ProviderCreate, ProviderType, ProviderUpdate
 from shared.utils.crypto import decrypt_api_key, encrypt_api_key, mask_api_key
 
@@ -67,6 +68,12 @@ def delete_provider(db: Session, provider: Provider) -> None:
     db.commit()
 
 
+def _clear_default_model_if_deleted(db: Session, model_ids: set[str]) -> None:
+    setting = db.query(Setting).filter(Setting.key == "default_model_id").first()
+    if setting and setting.value and setting.value not in model_ids:
+        setting.value = ""
+
+
 def fetch_models(db: Session, provider: Provider) -> list[LLMModel]:
     decrypted_key = decrypt_api_key(provider.encrypted_api_key)
 
@@ -84,12 +91,21 @@ def fetch_models(db: Session, provider: Provider) -> list[LLMModel]:
         resp = client.get(f"{base_url}/v1/models", headers=headers)
         resp.raise_for_status()
 
-    remote_ids = [m["id"] for m in resp.json().get("data", [])]
+    remote_ids = set(m["id"] for m in resp.json().get("data", []))
 
-    existing_ids = {
-        m.model_id
-        for m in db.query(LLMModel).filter(LLMModel.provider_id == provider.id).all()
-    }
+    existing_models = (
+        db.query(LLMModel).filter(LLMModel.provider_id == provider.id).all()
+    )
+    existing_ids = {m.model_id for m in existing_models}
+
+    # Remove models no longer present in the remote API
+    for model in existing_models:
+        if model.model_id not in remote_ids:
+            db.delete(model)
+
+    # Clear default_model_id if the referenced model was removed
+    remaining_model_ids = {m.id for m in existing_models if m.model_id in remote_ids}
+    _clear_default_model_if_deleted(db, remaining_model_ids)
 
     new_models = []
     for mid in remote_ids:

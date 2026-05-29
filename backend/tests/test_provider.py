@@ -130,6 +130,51 @@ class TestProviderFetchModels:
         data = resp.json()
         assert data["fetched"] == 2
 
+    @patch("app.services.provider.httpx.Client")
+    def test_fetch_models_removes_stale_models(self, mock_client_cls, admin_user, client):
+        create_resp = client.post(
+            "/api/providers",
+            headers=admin_user,
+            json={
+                "name": "OpenAI",
+                "type": "openai_compatible",
+                "base_url": "https://api.openai.com",
+                "api_key": "sk-test-key-1234567890",
+            },
+        )
+        provider_id = create_resp.json()["id"]
+
+        # First fetch: returns gpt-4o and gpt-4o-mini
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = {
+            "data": [{"id": "gpt-4o"}, {"id": "gpt-4o-mini"}]
+        }
+        mock_resp.raise_for_status = MagicMock()
+        mock_client = MagicMock()
+        mock_client.get.return_value = mock_resp
+        mock_client.__enter__ = MagicMock(return_value=mock_client)
+        mock_client.__exit__ = MagicMock(return_value=False)
+        mock_client_cls.return_value = mock_client
+
+        client.post(
+            f"/api/providers/{provider_id}/fetch-models", headers=admin_user
+        )
+
+        # Second fetch: only returns gpt-4o (simulating provider change)
+        mock_resp.json.return_value = {"data": [{"id": "gpt-4o"}]}
+        resp = client.post(
+            f"/api/providers/{provider_id}/fetch-models", headers=admin_user
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["fetched"] == 0
+
+        # Verify stale model was removed
+        models_resp = client.get("/api/models/all", headers=admin_user)
+        model_ids = [m["model_id"] for m in models_resp.json()]
+        assert "gpt-4o-mini" not in model_ids
+        assert "gpt-4o" in model_ids
+
 
 class TestProviderTest:
     @patch("app.services.provider.httpx.Client")
