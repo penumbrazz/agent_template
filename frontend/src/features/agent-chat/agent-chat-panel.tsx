@@ -163,19 +163,22 @@ export function AgentChatPanel() {
       {/* Body area with optional history drawer */}
       <div className="relative flex-1 overflow-hidden">
         {/* History drawer overlay */}
-        {isHistoryOpen && (
-          <div
-            data-testid="agent-chat-history-overlay"
-            onClick={closeHistory}
-            className="absolute inset-0 z-10 bg-black/20"
-          />
-        )}
+        <div
+          data-testid="agent-chat-history-overlay"
+          onClick={closeHistory}
+          className={cn(
+            'absolute inset-0 z-10 bg-black/20 transition-opacity duration-200',
+            isHistoryOpen ? 'opacity-100' : 'pointer-events-none opacity-0',
+          )}
+        />
 
         {/* History drawer - session list only */}
-        {isHistoryOpen && (
-          <div
-            data-testid="agent-chat-history-drawer"
-            className="absolute inset-y-0 left-0 z-20 w-64 border-r border-border bg-base shadow-lg"
+        <div
+          data-testid="agent-chat-history-drawer"
+          className={cn(
+            'absolute inset-y-0 left-0 z-20 w-64 border-r border-border bg-base shadow-lg transition-transform duration-200',
+            isHistoryOpen ? 'translate-x-0' : '-translate-x-full',
+          )}
           >
             <div className="overflow-y-auto p-2">
               {sessions.map(session => (
@@ -197,7 +200,6 @@ export function AgentChatPanel() {
               ))}
             </div>
           </div>
-        )}
 
         {/* Chat content */}
         <div className="flex h-full flex-col">

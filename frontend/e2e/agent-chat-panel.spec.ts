@@ -87,7 +87,7 @@ test.describe('Agent Chat Panel', () => {
     await expect(page.getByTestId('agent-chat-history-drawer')).toBeVisible()
 
     await page.getByTestId('agent-chat-session-item-session-hello').click()
-    await expect(page.getByTestId('agent-chat-history-drawer')).not.toBeVisible()
+    await expect(page.getByTestId('agent-chat-history-drawer')).toHaveClass(/-translate-x-full/)
     await expect(page.getByTestId('agent-chat-panel')).toContainText('你好')
 
     await page.getByTestId('agent-chat-new-conversation-button').click()
