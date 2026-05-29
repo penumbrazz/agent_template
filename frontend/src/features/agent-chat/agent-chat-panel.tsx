@@ -61,6 +61,14 @@ export function AgentChatPanel() {
     }
   }
 
+  function toggleHistory() {
+    if (isHistoryOpen) {
+      closeHistory()
+    } else {
+      openHistory()
+    }
+  }
+
   if (mode === 'minimized') {
     return (
       <button
@@ -102,7 +110,7 @@ export function AgentChatPanel() {
       >
         <button
           data-testid="agent-chat-menu-button"
-          onClick={() => (isHistoryOpen ? closeHistory() : openHistory())}
+          onClick={toggleHistory}
           className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-surface transition-colors"
           type="button"
         >
@@ -163,23 +171,12 @@ export function AgentChatPanel() {
           />
         )}
 
-        {/* History drawer */}
+        {/* History drawer - session list only */}
         {isHistoryOpen && (
           <div
             data-testid="agent-chat-history-drawer"
             className="absolute inset-y-0 left-0 z-20 w-64 border-r border-border bg-base shadow-lg"
           >
-            <div className="flex items-center justify-between border-b border-border px-3 py-2.5">
-              <span className="text-sm font-medium">历史对话</span>
-              <button
-                data-testid="agent-chat-history-new-conversation-button"
-                onClick={startNewConversation}
-                className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-surface transition-colors"
-                type="button"
-              >
-                <Plus className="h-4 w-4" />
-              </button>
-            </div>
             <div className="overflow-y-auto p-2">
               {sessions.map(session => (
                 <button
