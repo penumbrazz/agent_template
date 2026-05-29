@@ -82,7 +82,7 @@ function ProviderFormBody({ provider, onSubmit, onClose }: ProviderFormBodyProps
       apiKey !== '' ||
       type !== provider?.type)
 
-  const canTest = baseUrl.trim() !== '' && apiKey.trim() !== ''
+  const canTest = baseUrl.trim() !== ''
 
   const canSave = isEdit
     ? !connectionFieldsChanged || testResult?.passed === true
@@ -104,7 +104,7 @@ function ProviderFormBody({ provider, onSubmit, onClose }: ProviderFormBodyProps
   }
 
   const handleTest = async () => {
-    if (!baseUrl || !apiKey) return
+    if (!baseUrl) return
     setIsTesting(true)
     setTestResult(null)
     try {
@@ -241,7 +241,7 @@ function ProviderFormBody({ provider, onSubmit, onClose }: ProviderFormBodyProps
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={loading || !name || !baseUrl || (!isEdit && !apiKey) || !canSave}
+            disabled={loading || !name || !baseUrl || !canSave}
             data-testid="provider-submit"
           >
             {loading ? '保存中...' : '保存'}

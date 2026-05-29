@@ -13,7 +13,7 @@ class ProviderCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     type: ProviderType
     base_url: str = Field(..., min_length=1, max_length=500)
-    api_key: str = Field(..., min_length=1)
+    api_key: str = Field("")
 
 
 class ProviderUpdate(BaseModel):
@@ -42,7 +42,7 @@ class ProviderTestRequest(BaseModel):
 
 class ProviderValidateRequest(BaseModel):
     base_url: str = Field(..., min_length=1, max_length=500)
-    api_key: str = Field(..., min_length=1)
+    api_key: str = Field("")
     provider_type: ProviderType
 
 

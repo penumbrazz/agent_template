@@ -17,6 +17,13 @@ def _mask_key(encrypted_key: str) -> str:
     return mask_api_key(decrypted)
 
 
+def _normalize_base_url(url: str) -> str:
+    url = url.rstrip("/")
+    if url.endswith("/v1"):
+        url = url[:-3]
+    return url
+
+
 def list_providers(db: Session) -> list[Provider]:
     return db.query(Provider).order_by(Provider.created_at.desc()).all()
 
@@ -29,7 +36,7 @@ def create_provider(db: Session, data: ProviderCreate) -> Provider:
     provider = Provider(
         name=data.name,
         type=data.type.value,
-        base_url=data.base_url.rstrip("/"),
+        base_url=_normalize_base_url(data.base_url),
         encrypted_api_key=encrypt_api_key(data.api_key),
     )
     db.add(provider)
@@ -47,7 +54,7 @@ def update_provider(db: Session, provider: Provider, data: ProviderUpdate) -> Pr
         if raw_key and raw_key != mask_api_key(raw_key):
             provider.encrypted_api_key = encrypt_api_key(raw_key)
     if "base_url" in update_data and update_data["base_url"]:
-        update_data["base_url"] = update_data["base_url"].rstrip("/")
+        update_data["base_url"] = _normalize_base_url(update_data["base_url"])
     for field, value in update_data.items():
         setattr(provider, field, value)
     db.commit()
@@ -62,17 +69,16 @@ def delete_provider(db: Session, provider: Provider) -> None:
 
 def fetch_models(db: Session, provider: Provider) -> list[LLMModel]:
     decrypted_key = decrypt_api_key(provider.encrypted_api_key)
-    if not decrypted_key:
-        raise ValueError("Failed to decrypt API key")
 
-    base_url = provider.base_url.rstrip("/")
-    headers = {}
+    base_url = _normalize_base_url(provider.base_url)
+    headers: dict[str, str] = {}
 
-    if provider.type == ProviderType.OPENAI_COMPATIBLE.value:
-        headers["Authorization"] = f"Bearer {decrypted_key}"
-    else:
-        headers["x-api-key"] = decrypted_key
-        headers["anthropic-version"] = "2023-06-01"
+    if decrypted_key:
+        if provider.type == ProviderType.OPENAI_COMPATIBLE.value:
+            headers["Authorization"] = f"Bearer {decrypted_key}"
+        else:
+            headers["x-api-key"] = decrypted_key
+            headers["anthropic-version"] = "2023-06-01"
 
     with httpx.Client(timeout=30.0) as client:
         resp = client.get(f"{base_url}/v1/models", headers=headers)
@@ -102,8 +108,6 @@ def test_provider(
     db: Session, provider: Provider, model_id: Optional[str] = None
 ) -> dict:
     decrypted_key = decrypt_api_key(provider.encrypted_api_key)
-    if not decrypted_key:
-        return {"success": False, "latency_ms": 0, "error": "Failed to decrypt API key"}
 
     if not model_id:
         model = db.query(LLMModel).filter(LLMModel.provider_id == provider.id).first()
@@ -115,7 +119,17 @@ def test_provider(
             }
         model_id = model.model_id
 
-    base_url = provider.base_url.rstrip("/")
+    base_url = _normalize_base_url(provider.base_url)
+    headers: dict[str, str] = {}
+
+    if decrypted_key:
+        if provider.type == ProviderType.OPENAI_COMPATIBLE.value:
+            headers["Authorization"] = f"Bearer {decrypted_key}"
+        else:
+            headers["x-api-key"] = decrypted_key
+            headers["anthropic-version"] = "2023-06-01"
+            headers["content-type"] = "application/json"
+
     start = time.monotonic()
 
     try:
@@ -123,7 +137,7 @@ def test_provider(
             if provider.type == ProviderType.OPENAI_COMPATIBLE.value:
                 resp = client.post(
                     f"{base_url}/v1/chat/completions",
-                    headers={"Authorization": f"Bearer {decrypted_key}"},
+                    headers=headers,
                     json={
                         "model": model_id,
                         "messages": [{"role": "user", "content": "Hi"}],
@@ -133,11 +147,7 @@ def test_provider(
             else:
                 resp = client.post(
                     f"{base_url}/v1/messages",
-                    headers={
-                        "x-api-key": decrypted_key,
-                        "anthropic-version": "2023-06-01",
-                        "content-type": "application/json",
-                    },
+                    headers=headers,
                     json={
                         "model": model_id,
                         "messages": [{"role": "user", "content": "Hi"}],
@@ -157,24 +167,27 @@ def validate_provider(base_url: str, api_key: str, provider_type: str) -> dict:
 
     Unlike test_provider, this does not require a saved provider record.
     """
-    url = base_url.rstrip("/")
+    url = _normalize_base_url(base_url)
     start = time.monotonic()
 
     try:
         with httpx.Client(timeout=15.0) as client:
             if provider_type == ProviderType.OPENAI_COMPATIBLE.value:
+                headers: dict[str, str] = {}
+                if api_key:
+                    headers["Authorization"] = f"Bearer {api_key}"
                 resp = client.get(
                     f"{url}/v1/models",
-                    headers={"Authorization": f"Bearer {api_key}"},
+                    headers=headers,
                 )
             else:
+                headers = {"content-type": "application/json"}
+                if api_key:
+                    headers["x-api-key"] = api_key
+                headers["anthropic-version"] = "2023-06-01"
                 resp = client.post(
                     f"{url}/v1/messages",
-                    headers={
-                        "x-api-key": api_key,
-                        "anthropic-version": "2023-06-01",
-                        "content-type": "application/json",
-                    },
+                    headers=headers,
                     json={
                         "model": "claude-sonnet-4-20250514",
                         "messages": [{"role": "user", "content": "Hi"}],

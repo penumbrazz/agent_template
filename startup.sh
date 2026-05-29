@@ -31,7 +31,19 @@ check_deps() {
   done
 }
 
+kill_port() {
+  local port=$1
+  local pids
+  pids=$(lsof -ti :"$port" 2>/dev/null || true)
+  if [ -n "$pids" ]; then
+    warn "Port :$port is in use, killing existing processes ..."
+    echo "$pids" | xargs kill 2>/dev/null || true
+    sleep 1
+  fi
+}
+
 start_backend() {
+  kill_port "$BACKEND_PORT"
   log "Starting backend on :${BACKEND_PORT} ..."
   cd "$ROOT_DIR/backend"
 
@@ -53,10 +65,13 @@ start_backend() {
     &>/tmp/agent-template-backend.log &
 
   BACKEND_PID=$!
+  # Track the process group so cleanup kills uvicorn's reload subprocesses too
+  BACKEND_PGID=$(ps -o pgid= -p "$BACKEND_PID" | tr -d ' ')
   log "Backend PID: $BACKEND_PID (log: /tmp/agent-template-backend.log)"
 }
 
 start_frontend() {
+  kill_port "$FRONTEND_PORT"
   log "Starting frontend on :${FRONTEND_PORT} ..."
   cd "$ROOT_DIR/frontend"
 
@@ -70,6 +85,7 @@ start_frontend() {
     &>/tmp/agent-template-frontend.log &
 
   FRONTEND_PID=$!
+  FRONTEND_PGID=$(ps -o pgid= -p "$FRONTEND_PID" | tr -d ' ')
   log "Frontend PID: $FRONTEND_PID (log: /tmp/agent-template-frontend.log)"
 }
 
@@ -99,8 +115,16 @@ log "Press Ctrl+C to stop all services"
 
 cleanup() {
   log "Stopping services ..."
-  kill "$BACKEND_PID" 2>/dev/null || true
-  kill "$FRONTEND_PID" 2>/dev/null || true
+  if [ -n "${BACKEND_PGID:-}" ]; then
+    kill -- -"$BACKEND_PGID" 2>/dev/null || true
+  else
+    kill "$BACKEND_PID" 2>/dev/null || true
+  fi
+  if [ -n "${FRONTEND_PGID:-}" ]; then
+    kill -- -"$FRONTEND_PGID" 2>/dev/null || true
+  else
+    kill "$FRONTEND_PID" 2>/dev/null || true
+  fi
   log "Done."
   exit 0
 }
