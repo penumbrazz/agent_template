@@ -39,9 +39,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     apiClient
-      .post<AuthUser>('/api/auth/refresh')
+      .post<{ access_token: string }>('/api/auth/refresh')
       .then((data) => {
-        setUser(data)
+        setAccessToken(data.access_token)
+        return apiClient.get<AuthUser>('/api/auth/me')
+      })
+      .then((me) => {
+        setUser(me)
       })
       .catch(() => {
         setUser(null)
