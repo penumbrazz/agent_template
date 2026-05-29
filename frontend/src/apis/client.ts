@@ -10,23 +10,87 @@ export class ApiError extends Error {
   }
 }
 
+// In-memory access token (never persisted to localStorage)
+let accessToken: string | null = null
+
+export function setAccessToken(token: string | null): void {
+  accessToken = token
+}
+
+export function getAccessToken(): string | null {
+  return accessToken
+}
+
+let refreshPromise: Promise<boolean> | null = null
+
 class APIClient {
   private getBaseURL(): string {
     return getApiBaseUrl()
   }
 
+  private async refreshAccessToken(): Promise<boolean> {
+    if (refreshPromise) return refreshPromise
+
+    refreshPromise = (async () => {
+      try {
+        const url = `${this.getBaseURL()}/api/auth/refresh`
+        const response = await fetch(url, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+        })
+        if (!response.ok) return false
+        const data = await response.json()
+        accessToken = data.access_token
+        return true
+      } catch {
+        return false
+      } finally {
+        refreshPromise = null
+      }
+    })()
+
+    return refreshPromise
+  }
+
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.getBaseURL()}${endpoint}`
 
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(options.headers as Record<string, string>),
+    }
+    if (accessToken) {
+      headers['Authorization'] = `Bearer ${accessToken}`
+    }
+
     const config: RequestInit = {
       ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
+      credentials: 'include',
+      headers,
     }
 
     const response = await fetch(url, config)
+
+    if (response.status === 401 && !endpoint.includes('/auth/')) {
+      const refreshed = await this.refreshAccessToken()
+      if (refreshed) {
+        headers['Authorization'] = `Bearer ${accessToken}`
+        const retryConfig: RequestInit = {
+          ...options,
+          credentials: 'include',
+          headers,
+        }
+        const retryResponse = await fetch(url, retryConfig)
+        if (retryResponse.ok) {
+          if (retryResponse.status === 204) return null as T
+          return retryResponse.json()
+        }
+        const errorText = await retryResponse.text()
+        throw new ApiError(errorText, retryResponse.status)
+      }
+      accessToken = null
+    }
 
     if (!response.ok) {
       const errorText = await response.text()
