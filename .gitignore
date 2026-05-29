@@ -26,3 +26,5 @@ shared/.venv/
 *.bak
 *.tsbuildinfo
 backend/test.db
+.superpowers/
+docs/superpowers/
