@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { LogOut, User } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -20,15 +21,17 @@ export function AccountSettings() {
   if (!user) return null
 
   const handleLogout = async () => {
-    setConfirmOpen(false)
-    await logout()
+    try {
+      setConfirmOpen(false)
+      await logout()
+    } catch {
+      toast.error('退出登录失败，请重试')
+    }
   }
 
   return (
     <div className="space-y-6" data-testid="account-settings">
-      <div>
-        <h3 className="text-base font-medium mb-4">账户信息</h3>
-      </div>
+      <h3 className="text-base font-medium mb-4">账户信息</h3>
       <div className="flex items-center gap-3 p-4 rounded-lg bg-[#efe9de]">
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#cc785c] text-white">
           <User className="h-5 w-5" />
