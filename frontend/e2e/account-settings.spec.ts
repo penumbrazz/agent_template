@@ -50,11 +50,12 @@ test.describe('Account Settings', () => {
     await page.click('[data-testid="logout-button"]')
 
     // Confirmation dialog appears
-    await expect(page.getByText('确定要退出登录吗？')).toBeVisible()
+    const confirmDesc = page.getByTestId('logout-confirm-desc')
+    await expect(confirmDesc).toBeVisible()
 
     // Cancel
     await page.click('[data-testid="logout-cancel-button"]')
-    await expect(page.getByText('确定要退出登录吗？')).not.toBeVisible()
+    await expect(confirmDesc).not.toBeVisible()
 
     // Still on settings page
     await expect(page.locator('[data-testid="account-settings"]')).toBeVisible()
@@ -62,7 +63,7 @@ test.describe('Account Settings', () => {
 
   test('logs out successfully', async ({ page }) => {
     await page.click('[data-testid="logout-button"]')
-    await expect(page.getByText('确定要退出登录吗？')).toBeVisible()
+    await expect(page.getByTestId('logout-confirm-desc')).toBeVisible()
 
     await page.click('[data-testid="logout-confirm-button"]')
 
