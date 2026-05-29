@@ -5,10 +5,12 @@ import { type FormEvent, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
 import { useAuth } from '@/features/auth/use-auth'
+import { useT, translate } from '@/i18n'
 
 export default function LoginPage() {
   const { login, isAuthenticated, isLoading } = useAuth()
   const router = useRouter()
+  const t = useT()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -27,7 +29,7 @@ export default function LoginPage() {
       await login(username, password)
       router.replace('/')
     } catch {
-      toast.error('登录失败', { description: '用户名或密码错误' })
+      toast.error(translate('auth.loginFailed'), { description: translate('auth.invalidCredentials') })
     } finally {
       setSubmitting(false)
     }
@@ -42,7 +44,7 @@ export default function LoginPage() {
         >
           Agent Template
         </h1>
-        <p className="mt-2 text-center text-sm text-text-muted">登录以继续</p>
+        <p className="mt-2 text-center text-sm text-text-muted">{t('auth.loginToContinue')}</p>
 
         <form
           onSubmit={handleSubmit}
@@ -54,7 +56,7 @@ export default function LoginPage() {
                 htmlFor="username"
                 className="mb-1.5 block text-sm font-medium text-text-primary"
               >
-                用户名
+                {t('auth.username')}
               </label>
               <input
                 id="username"
@@ -65,7 +67,7 @@ export default function LoginPage() {
                 required
                 autoComplete="username"
                 className="h-10 w-full rounded-md border border-border bg-base px-3 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15"
-                placeholder="请输入用户名"
+                placeholder={t('auth.usernamePlaceholder')}
               />
             </div>
             <div>
@@ -73,7 +75,7 @@ export default function LoginPage() {
                 htmlFor="password"
                 className="mb-1.5 block text-sm font-medium text-text-primary"
               >
-                密码
+                {t('auth.password')}
               </label>
               <input
                 id="password"
@@ -84,7 +86,7 @@ export default function LoginPage() {
                 required
                 autoComplete="current-password"
                 className="h-10 w-full rounded-md border border-border bg-base px-3 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15"
-                placeholder="请输入密码"
+                placeholder={t('auth.passwordPlaceholder')}
               />
             </div>
           </div>
@@ -94,7 +96,7 @@ export default function LoginPage() {
             disabled={submitting}
             className="mt-6 flex h-10 w-full items-center justify-center rounded-md bg-primary text-sm font-medium text-white transition-colors hover:bg-primary-active disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {submitting ? '登录中...' : '登录'}
+            {submitting ? t('auth.loginLoading') : t('auth.login')}
           </button>
         </form>
       </div>

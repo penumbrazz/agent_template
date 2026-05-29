@@ -110,7 +110,9 @@ test.describe('Model Configuration', () => {
     await testBtn.click()
 
     // A toast error should appear
-    await expect(page.getByText(/连接/i)).toBeVisible({ timeout: 10000 })
+    await expect(
+      page.locator('[data-sonner-toast][data-type="error"]').first()
+    ).toBeVisible({ timeout: 10000 })
 
     // Save should still be disabled after failed test
     await expect(saveBtn).toBeDisabled()

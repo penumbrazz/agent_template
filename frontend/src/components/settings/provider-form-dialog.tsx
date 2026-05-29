@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { useT, translate } from '@/i18n'
 import { Eye, EyeOff, FlaskConical, CheckCircle2 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -75,6 +76,7 @@ function ProviderFormBody({ provider, onSubmit, onClose }: ProviderFormBodyProps
   const [loading, setLoading] = useState(false)
   const [testResult, setTestResult] = useState<TestResult | null>(null)
   const [isTesting, setIsTesting] = useState(false)
+  const t = useT()
 
   const connectionFieldsChanged =
     isEdit &&
@@ -115,15 +117,15 @@ function ProviderFormBody({ provider, onSubmit, onClose }: ProviderFormBodyProps
       })
       if (result.success) {
         setTestResult({ passed: true, latencyMs: result.latency_ms })
-        toast.success(`连接成功 (${result.latency_ms}ms)`)
+        toast.success(translate('settings.modelConfig.connectionSuccessMs', { latencyMs: result.latency_ms }))
       } else {
         setTestResult(null)
-        toast.error(result.error ?? '连接失败')
+        toast.error(result.error ?? translate('settings.modelConfig.connectionFailed'))
       }
     } catch (e) {
       setTestResult(null)
       const message =
-        e instanceof Error ? e.message : '连接测试失败，请检查网络'
+        e instanceof Error ? e.message : translate('settings.modelConfig.connectionTestFailed')
       toast.error(message)
     } finally {
       setIsTesting(false)
@@ -139,7 +141,7 @@ function ProviderFormBody({ provider, onSubmit, onClose }: ProviderFormBodyProps
       onClose()
     } catch (e) {
       const message =
-        e instanceof Error ? e.message : '保存失败，请稍后重试'
+        e instanceof Error ? e.message : translate('settings.modelConfig.saveFailed')
       toast.error(message)
     } finally {
       setLoading(false)
@@ -149,11 +151,11 @@ function ProviderFormBody({ provider, onSubmit, onClose }: ProviderFormBodyProps
   return (
     <>
       <DialogHeader>
-        <DialogTitle>{isEdit ? '编辑 Provider' : '添加 Provider'}</DialogTitle>
+        <DialogTitle>{isEdit ? t('settings.modelConfig.editProvider') : t('settings.modelConfig.addProviderTitle')}</DialogTitle>
       </DialogHeader>
       <div className="space-y-4 py-4">
         <div className="space-y-2">
-          <Label htmlFor="provider-name">名称</Label>
+          <Label htmlFor="provider-name">{t('settings.modelConfig.providerName')}</Label>
           <Input
             id="provider-name"
             data-testid="provider-name-input"
@@ -163,14 +165,14 @@ function ProviderFormBody({ provider, onSubmit, onClose }: ProviderFormBodyProps
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="provider-type">类型</Label>
+          <Label htmlFor="provider-type">{t('settings.modelConfig.providerType')}</Label>
           <Select value={type} onValueChange={handleTypeChange}>
             <SelectTrigger id="provider-type" data-testid="provider-type-select">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="openai_compatible">OpenAI 兼容</SelectItem>
-              <SelectItem value="anthropic_compatible">Anthropic 兼容</SelectItem>
+              <SelectItem value="openai_compatible">{t('settings.modelConfig.openaiCompatible')}</SelectItem>
+              <SelectItem value="anthropic_compatible">{t('settings.modelConfig.anthropicCompatible')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -186,7 +188,7 @@ function ProviderFormBody({ provider, onSubmit, onClose }: ProviderFormBodyProps
         </div>
         <div className="space-y-2">
           <Label htmlFor="provider-key">
-            API Key{isEdit && '（留空则不修改）'}
+            {t('settings.modelConfig.apiKey')}{isEdit && t('settings.modelConfig.apiKeyEditHint')}
           </Label>
           <div className="relative">
             <Input
@@ -195,7 +197,7 @@ function ProviderFormBody({ provider, onSubmit, onClose }: ProviderFormBodyProps
               type={showKey ? 'text' : 'password'}
               value={apiKey}
               onChange={(e) => handleApiKeyChange(e.target.value)}
-              placeholder={isEdit ? '••••••••' : '输入 API Key'}
+              placeholder={isEdit ? '••••••••' : t('settings.modelConfig.apiKeyPlaceholder')}
             />
             <button
               type="button"
@@ -215,7 +217,7 @@ function ProviderFormBody({ provider, onSubmit, onClose }: ProviderFormBodyProps
           data-testid="test-success-indicator"
         >
           <CheckCircle2 className="h-4 w-4" />
-          <span>连接成功 ({testResult.latencyMs}ms)</span>
+          <span>{translate('settings.modelConfig.connectionSuccessMs', { latencyMs: testResult.latencyMs })}</span>
         </div>
       )}
 
@@ -229,7 +231,7 @@ function ProviderFormBody({ provider, onSubmit, onClose }: ProviderFormBodyProps
           className="gap-1.5"
         >
           <FlaskConical className="h-3.5 w-3.5" />
-          {isTesting ? '测试中...' : '测试连接'}
+          {isTesting ? t('settings.modelConfig.testing') : t('settings.modelConfig.testConnection')}
         </Button>
         <div className="flex gap-2">
           <Button
@@ -237,14 +239,14 @@ function ProviderFormBody({ provider, onSubmit, onClose }: ProviderFormBodyProps
             onClick={onClose}
             data-testid="provider-cancel"
           >
-            取消
+            {t('common.cancel')}
           </Button>
           <Button
             onClick={handleSubmit}
             disabled={loading || !name || !baseUrl || !canSave}
             data-testid="provider-submit"
           >
-            {loading ? '保存中...' : '保存'}
+            {loading ? t('settings.modelConfig.saving') : t('common.save')}
           </Button>
         </div>
       </DialogFooter>

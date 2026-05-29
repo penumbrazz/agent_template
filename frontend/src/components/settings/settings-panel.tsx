@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useT } from '@/i18n'
 import {
   Dialog,
   DialogContent,
@@ -19,6 +20,7 @@ type Tab = 'general' | 'models' | 'account'
 export function SettingsPanel() {
   const [open, setOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<Tab>('models')
+  const t = useT()
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -37,7 +39,7 @@ export function SettingsPanel() {
         data-testid="settings-panel"
       >
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
-          <DialogTitle>设置</DialogTitle>
+          <DialogTitle>{t('settings.title')}</DialogTitle>
         </DialogHeader>
         <div className="flex min-h-0 flex-1 overflow-hidden">
           <nav className="w-40 border-r p-4 flex flex-col gap-1 bg-surface">
@@ -50,7 +52,7 @@ export function SettingsPanel() {
                   : 'text-text-muted hover:bg-border'
               }`}
             >
-              账户
+              {t('settings.tabs.account')}
             </button>
             <button
               data-testid="tab-general"
@@ -61,7 +63,7 @@ export function SettingsPanel() {
                   : 'text-text-muted hover:bg-border'
               }`}
             >
-              通用设置
+              {t('settings.tabs.general')}
             </button>
             <button
               data-testid="tab-models"
@@ -72,7 +74,7 @@ export function SettingsPanel() {
                   : 'text-text-muted hover:bg-border'
               }`}
             >
-              模型配置
+              {t('settings.tabs.modelConfig')}
             </button>
           </nav>
           <div className="flex-1 overflow-y-auto p-6">

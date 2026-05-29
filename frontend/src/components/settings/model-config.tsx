@@ -14,6 +14,7 @@ import { ModelFormDialog } from './model-form-dialog'
 import { TestModelDialog } from './test-model-dialog'
 import { Plus, RefreshCw, Trash2, FlaskConical, Edit } from 'lucide-react'
 import { toast } from 'sonner'
+import { useT, translate } from '@/i18n'
 
 export function ModelConfig() {
   const { data: providers, mutate: mutateProviders } = useSWR(
@@ -30,6 +31,7 @@ export function ModelConfig() {
   const [editingProvider, setEditingProvider] = useState<Provider | null>(null)
   const [modelDialogOpen, setModelDialogOpen] = useState(false)
   const [testDialogOpen, setTestDialogOpen] = useState(false)
+  const t = useT()
 
   const providerModels = allModels?.filter(
     (m) => m.provider_id === selectedProvider?.id,
@@ -39,9 +41,9 @@ export function ModelConfig() {
     try {
       await providersApi.create(data)
       mutateProviders()
-      toast.success('Provider 创建成功')
+      toast.success(translate('settings.modelConfig.providerCreated'))
     } catch (e) {
-      const message = e instanceof Error ? e.message : '创建失败，请稍后重试'
+      const message = e instanceof Error ? e.message : translate('settings.modelConfig.createFailed')
       toast.error(message)
       throw e
     }
@@ -53,9 +55,9 @@ export function ModelConfig() {
       await providersApi.update(editingProvider.id, data)
       mutateProviders()
       setEditingProvider(null)
-      toast.success('Provider 更新成功')
+      toast.success(translate('settings.modelConfig.providerUpdated'))
     } catch (e) {
-      const message = e instanceof Error ? e.message : '更新失败，请稍后重试'
+      const message = e instanceof Error ? e.message : translate('settings.modelConfig.updateFailed')
       toast.error(message)
       throw e
     }
@@ -67,9 +69,9 @@ export function ModelConfig() {
       mutateProviders()
       mutateModels()
       if (selectedProvider?.id === id) setSelectedProvider(null)
-      toast.success('Provider 已删除')
+      toast.success(translate('settings.modelConfig.providerDeleted'))
     } catch (e) {
-      const message = e instanceof Error ? e.message : '删除失败，请稍后重试'
+      const message = e instanceof Error ? e.message : translate('settings.modelConfig.deleteFailed')
       toast.error(message)
     }
   }
@@ -79,9 +81,9 @@ export function ModelConfig() {
     try {
       await providersApi.fetchModels(selectedProvider.id)
       mutateModels()
-      toast.success('模型列表已更新')
+      toast.success(translate('settings.modelConfig.modelsFetched'))
     } catch (e) {
-      const message = e instanceof Error ? e.message : '获取模型失败'
+      const message = e instanceof Error ? e.message : translate('settings.modelConfig.fetchModelsFailed')
       toast.error(message)
     }
   }
@@ -91,7 +93,7 @@ export function ModelConfig() {
       await modelsApi.create(data)
       mutateModels()
     } catch (e) {
-      const message = e instanceof Error ? e.message : '创建模型失败'
+      const message = e instanceof Error ? e.message : translate('settings.modelConfig.createModelFailed')
       toast.error(message)
       throw e
     }
@@ -102,7 +104,7 @@ export function ModelConfig() {
       await modelsApi.toggle(model.id)
       mutateModels()
     } catch (e) {
-      const message = e instanceof Error ? e.message : '切换模型状态失败'
+      const message = e instanceof Error ? e.message : translate('settings.modelConfig.toggleModelFailed')
       toast.error(message)
     }
   }
@@ -112,7 +114,7 @@ export function ModelConfig() {
       await modelsApi.delete(id)
       mutateModels()
     } catch (e) {
-      const message = e instanceof Error ? e.message : '删除模型失败'
+      const message = e instanceof Error ? e.message : translate('settings.modelConfig.deleteModelFailed')
       toast.error(message)
     }
   }
@@ -120,7 +122,7 @@ export function ModelConfig() {
   return (
     <div className="space-y-6" data-testid="model-config">
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-medium">模型配置</h3>
+        <h3 className="text-base font-medium">{t('settings.modelConfig.title')}</h3>
         <Button
           size="sm"
           onClick={() => {
@@ -130,13 +132,13 @@ export function ModelConfig() {
           data-testid="add-provider-button"
         >
           <Plus className="h-4 w-4 mr-1" />
-          添加 Provider
+          {t('settings.modelConfig.addProvider')}
         </Button>
       </div>
 
       {(!providers || providers.length === 0) && (
         <p className="text-sm text-text-muted py-4 text-center">
-          暂无 Provider，点击上方按钮添加
+          {t('settings.modelConfig.noProvider')}
         </p>
       )}
 
@@ -194,7 +196,7 @@ export function ModelConfig() {
         <div className="space-y-4 pt-4 border-t">
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-medium">
-              {selectedProvider.name} 的模型
+              {t('settings.modelConfig.providerModels', { name: selectedProvider.name })}
             </h4>
             <div className="flex gap-2">
               <Button
@@ -204,7 +206,7 @@ export function ModelConfig() {
                 data-testid="fetch-models-button"
               >
                 <RefreshCw className="h-3.5 w-3.5 mr-1" />
-                Fetch 模型
+                {t('settings.modelConfig.fetchModels')}
               </Button>
               <Button
                 variant="outline"
@@ -213,7 +215,7 @@ export function ModelConfig() {
                 data-testid="add-model-button"
               >
                 <Plus className="h-3.5 w-3.5 mr-1" />
-                手动添加
+                {t('settings.modelConfig.manualAdd')}
               </Button>
               <Button
                 variant="outline"
@@ -222,14 +224,14 @@ export function ModelConfig() {
                 data-testid="test-connection-button"
               >
                 <FlaskConical className="h-3.5 w-3.5 mr-1" />
-                测试
+                {t('settings.modelConfig.test')}
               </Button>
             </div>
           </div>
 
           {providerModels.length === 0 && (
             <p className="text-sm text-text-muted py-2 text-center">
-              暂无模型，点击 Fetch 拉取或手动添加
+              {t('settings.modelConfig.noModels')}
             </p>
           )}
 
