@@ -1,7 +1,19 @@
 import { expect, test } from '@playwright/test'
 
+const MOCK_USER = { id: 'mock-user', username: 'mockuser', email: 'mock@test.com' }
+
+async function mockAuth(page: import('@playwright/test').Page) {
+  await page.route('**/api/auth/refresh', route =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ access_token: 'mock-token' }) }),
+  )
+  await page.route('**/api/auth/me', route =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(MOCK_USER) }),
+  )
+}
+
 test.describe('Agent Chat Panel', () => {
   test('opens, minimizes, and reopens as floating panel', async ({ page }) => {
+    await mockAuth(page)
     await page.goto('/', { waitUntil: 'networkidle' })
     await page.getByTestId('agent-chat-minimized-button').click()
     await expect(page.getByTestId('agent-chat-panel')).toBeVisible()
@@ -12,6 +24,7 @@ test.describe('Agent Chat Panel', () => {
   })
 
   test('keeps floating panel inside the viewport while dragging', async ({ page }) => {
+    await mockAuth(page)
     await page.goto('/', { waitUntil: 'networkidle' })
     await page.getByTestId('agent-chat-minimized-button').click()
 
@@ -32,6 +45,7 @@ test.describe('Agent Chat Panel', () => {
   })
 
   test('docks, resizes, persists width, and restores floating mode', async ({ page }) => {
+    await mockAuth(page)
     await page.goto('/', { waitUntil: 'networkidle' })
     await page.getByTestId('agent-chat-minimized-button').click()
     await page.getByTestId('agent-chat-dock-button').click()
@@ -66,6 +80,7 @@ test.describe('Agent Chat Panel', () => {
   })
 
   test('opens history drawer, switches sessions, and creates new conversation', async ({ page }) => {
+    await mockAuth(page)
     await page.goto('/', { waitUntil: 'networkidle' })
     await page.getByTestId('agent-chat-minimized-button').click()
     await page.getByTestId('agent-chat-menu-button').click()
