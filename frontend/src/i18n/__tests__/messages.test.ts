@@ -1,4 +1,5 @@
 import { translate, LOCALES } from '../messages'
+import type { TranslationKey } from '../messages'
 
 // Mock locale-store before messages imports it
 jest.mock('../locale-store', () => ({
@@ -32,52 +33,60 @@ jest.mock('../locales/zh-CN', () => ({
   },
 }))
 
+// Tests use mocked locale data with keys not in the real en.ts,
+// so we cast to TranslationKey for type compatibility.
+const t = translate as (
+  key: string,
+  values?: Record<string, string | number | boolean | null | undefined>,
+  locale?: 'en' | 'zh-CN',
+) => string
+
 describe('translate', () => {
   it('returns English translation for existing key', () => {
-    expect(translate('common.cancel', undefined, 'en')).toBe('Cancel')
+    expect(t('common.cancel', undefined, 'en')).toBe('Cancel')
   })
 
   it('returns Chinese translation for existing key', () => {
-    expect(translate('common.cancel', undefined, 'zh-CN')).toBe('取消')
+    expect(t('common.cancel', undefined, 'zh-CN')).toBe('取消')
   })
 
   it('falls back to English when key missing in current locale', () => {
-    expect(translate('common.save', undefined, 'zh-CN')).toBe('Save')
+    expect(t('common.save', undefined, 'zh-CN')).toBe('Save')
   })
 
   it('interpolates values into template', () => {
-    expect(translate('greeting.hello', { name: 'World' }, 'en')).toBe(
+    expect(t('greeting.hello', { name: 'World' }, 'en')).toBe(
       'Hello, World!',
     )
   })
 
   it('interpolates Chinese values', () => {
-    expect(translate('greeting.hello', { name: '世界' }, 'zh-CN')).toBe(
+    expect(t('greeting.hello', { name: '世界' }, 'zh-CN')).toBe(
       '你好，世界！',
     )
   })
 
   it('returns key when missing in both locales', () => {
-    expect(translate('common.nonexistent', undefined, 'en')).toBe(
+    expect(t('common.nonexistent', undefined, 'en')).toBe(
       'common.nonexistent',
     )
   })
 
   it('handles nested keys', () => {
-    expect(translate('greeting.nested.deep', undefined, 'en')).toBe(
+    expect(t('greeting.nested.deep', undefined, 'en')).toBe(
       'Deep value',
     )
   })
 
   it('leaves unmatched placeholders unchanged', () => {
-    expect(translate('greeting.hello', {}, 'en')).toBe('Hello, {name}!')
+    expect(t('greeting.hello', {}, 'en')).toBe('Hello, {name}!')
   })
 
   it('handles null and undefined interpolation values', () => {
-    expect(translate('greeting.hello', { name: null }, 'en')).toBe(
+    expect(t('greeting.hello', { name: null }, 'en')).toBe(
       'Hello, !',
     )
-    expect(translate('greeting.hello', { name: undefined }, 'en')).toBe(
+    expect(t('greeting.hello', { name: undefined }, 'en')).toBe(
       'Hello, !',
     )
   })
