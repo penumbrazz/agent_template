@@ -2,7 +2,7 @@ import structlog
 from sqlalchemy.orm import Session
 
 from app.models.user import User
-from app.services.auth import get_password_hash
+from app.services.auth import get_password_hash, verify_password
 
 logger = structlog.get_logger("seed")
 
@@ -14,6 +14,16 @@ DEFAULT_ADMIN_EMAIL = "admin@localhost"
 def seed_default_admin(db: Session) -> None:
     existing = db.query(User).filter(User.username == DEFAULT_ADMIN_USERNAME).first()
     if existing:
+        if not verify_password(DEFAULT_ADMIN_PASSWORD, existing.hashed_password):
+            existing.hashed_password = get_password_hash(DEFAULT_ADMIN_PASSWORD)
+            db.commit()
+            logger.info("seed_password_reset", username=DEFAULT_ADMIN_USERNAME)
+            return
+        if not existing.is_superuser:
+            existing.is_superuser = True
+            db.commit()
+            logger.info("seed_role_fixed", username=DEFAULT_ADMIN_USERNAME)
+            return
         logger.info("seed_skipped", reason="admin user already exists")
         return
     admin = User(

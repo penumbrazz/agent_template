@@ -177,13 +177,12 @@ class TestAuthLogout:
 
 
 class TestSeedDefaultAdmin:
-    def test_seed_creates_admin(self):
+    def _make_test_db(self):
         import os
         from sqlalchemy import create_engine
         from sqlalchemy.orm import sessionmaker
 
         from app.models.base import Base
-        from app.models.user import User
 
         test_engine = create_engine(
             "sqlite:///./test_seed.db", connect_args={"check_same_thread": False}
@@ -193,19 +192,84 @@ class TestSeedDefaultAdmin:
             autocommit=False, autoflush=False, bind=test_engine
         )
         test_db = TestSession()
+        return test_db, test_engine
+
+    def _cleanup(self, test_db, test_engine):
+        import os
+        from app.models.base import Base
+
+        test_db.close()
+        Base.metadata.drop_all(bind=test_engine)
+        try:
+            os.remove("test_seed.db")
+        except OSError:
+            pass
+
+    def test_seed_creates_admin(self):
+        from app.models.user import User
+        from app.services.auth import verify_password
+
+        test_db, test_engine = self._make_test_db()
         try:
             seed_default_admin(test_db)
             admin = test_db.query(User).filter(User.username == "admin").first()
             assert admin is not None
             assert admin.is_superuser is True
             assert admin.is_active is True
+            assert verify_password("admin", admin.hashed_password)
+        finally:
+            self._cleanup(test_db, test_engine)
+
+    def test_seed_idempotent(self):
+        from app.models.user import User
+
+        test_db, test_engine = self._make_test_db()
+        try:
+            seed_default_admin(test_db)
             seed_default_admin(test_db)
             count = test_db.query(User).filter(User.username == "admin").count()
             assert count == 1
         finally:
-            test_db.close()
-            Base.metadata.drop_all(bind=test_engine)
-            try:
-                os.remove("test_seed.db")
-            except OSError:
-                pass
+            self._cleanup(test_db, test_engine)
+
+    def test_seed_resets_wrong_password(self):
+        from app.models.user import User
+        from app.services.auth import get_password_hash, verify_password
+
+        test_db, test_engine = self._make_test_db()
+        try:
+            admin = User(
+                username="admin",
+                email="old@admin.com",
+                hashed_password=get_password_hash("wrong-password"),
+                is_superuser=True,
+                is_active=True,
+            )
+            test_db.add(admin)
+            test_db.commit()
+            seed_default_admin(test_db)
+            admin = test_db.query(User).filter(User.username == "admin").first()
+            assert verify_password("admin", admin.hashed_password)
+        finally:
+            self._cleanup(test_db, test_engine)
+
+    def test_seed_fixes_missing_superuser(self):
+        from app.models.user import User
+        from app.services.auth import get_password_hash
+
+        test_db, test_engine = self._make_test_db()
+        try:
+            admin = User(
+                username="admin",
+                email="old@admin.com",
+                hashed_password=get_password_hash("admin"),
+                is_superuser=False,
+                is_active=True,
+            )
+            test_db.add(admin)
+            test_db.commit()
+            seed_default_admin(test_db)
+            admin = test_db.query(User).filter(User.username == "admin").first()
+            assert admin.is_superuser is True
+        finally:
+            self._cleanup(test_db, test_engine)
