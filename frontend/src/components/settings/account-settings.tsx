@@ -13,10 +13,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { useAuth } from '@/features/auth/use-auth'
+import { useT, translate } from '@/i18n'
 
 export function AccountSettings() {
   const { user, logout } = useAuth()
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const t = useT()
 
   if (!user) return null
 
@@ -25,13 +27,13 @@ export function AccountSettings() {
       setConfirmOpen(false)
       await logout()
     } catch {
-      toast.error('退出登录失败，请重试')
+      toast.error(translate('auth.logoutFailed'))
     }
   }
 
   return (
     <div className="space-y-6" data-testid="account-settings">
-      <h3 className="text-base font-medium">账户信息</h3>
+      <h3 className="text-base font-medium">{t('settings.account.title')}</h3>
       <div className="rounded-lg border border-border p-4">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-white">
@@ -51,15 +53,15 @@ export function AccountSettings() {
           data-testid="logout-button"
         >
           <LogOut className="mr-2 h-4 w-4" />
-          退出登录
+          {t('auth.logout')}
         </Button>
       </div>
 
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent className="max-w-[400px]">
           <DialogHeader>
-            <DialogTitle>退出登录</DialogTitle>
-            <DialogDescription>确定要退出登录吗？</DialogDescription>
+            <DialogTitle>{t('auth.logout')}</DialogTitle>
+            <DialogDescription data-testid="logout-confirm-desc">{t('settings.account.logoutConfirm')}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button
@@ -67,14 +69,14 @@ export function AccountSettings() {
               onClick={() => setConfirmOpen(false)}
               data-testid="logout-cancel-button"
             >
-              取消
+              {t('common.cancel')}
             </Button>
             <Button
               className="bg-primary hover:bg-primary-active text-white"
               onClick={handleLogout}
               data-testid="logout-confirm-button"
             >
-              退出登录
+              {t('auth.logout')}
             </Button>
           </DialogFooter>
         </DialogContent>
