@@ -120,7 +120,7 @@ export function ModelConfig() {
   return (
     <div className="space-y-6" data-testid="model-config">
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-medium">Provider 列表</h3>
+        <h3 className="text-base font-medium">模型配置</h3>
         <Button
           size="sm"
           onClick={() => {

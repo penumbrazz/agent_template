@@ -33,9 +33,7 @@ export function GeneralSettings() {
 
   return (
     <div className="space-y-6" data-testid="general-settings">
-      <div>
-        <h3 className="text-base font-medium mb-4">通用设置</h3>
-      </div>
+      <h3 className="text-base font-medium">通用设置</h3>
       <div className="space-y-2">
         <Label htmlFor="default-model" data-testid="default-model-label">
           默认模型

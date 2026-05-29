@@ -31,17 +31,19 @@ export function AccountSettings() {
 
   return (
     <div className="space-y-6" data-testid="account-settings">
-      <h3 className="text-base font-medium mb-4">账户信息</h3>
-      <div className="flex items-center gap-3 p-4 rounded-lg bg-[#efe9de]">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#cc785c] text-white">
-          <User className="h-5 w-5" />
-        </div>
-        <div>
-          <p className="text-sm font-medium text-[#141413]">{user.username}</p>
-          <p className="text-xs text-[#6b6560]">{user.email}</p>
+      <h3 className="text-base font-medium">账户信息</h3>
+      <div className="rounded-lg border border-border p-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#cc785c] text-white">
+            <User className="h-5 w-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-medium truncate">{user.username}</p>
+            <p className="text-xs text-text-muted truncate">{user.email}</p>
+          </div>
         </div>
       </div>
-      <div className="pt-4 border-t">
+      <div className="pt-4 border-t flex justify-end">
         <Button
           variant="outline"
           className="text-[#cc785c] border-[#cc785c] hover:bg-[#cc785c] hover:text-white"
