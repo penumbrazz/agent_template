@@ -3,6 +3,7 @@ import { Toaster } from 'sonner'
 import './globals.css'
 import TelemetryInit from '@/components/TelemetryInit'
 import { AuthProvider } from '@/features/auth/auth-context'
+import { LocaleInitializer } from '@/components/LocaleInitializer'
 
 export const metadata: Metadata = {
   title: 'Agent Template',
@@ -11,9 +12,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="zh-CN" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <body className="bg-base text-text-primary antialiased">
         <AuthProvider>
+          <LocaleInitializer />
           <TelemetryInit />
           {children}
           <Toaster position="top-right" richColors />
