@@ -44,4 +44,34 @@ describe('createExtractorRegistry', () => {
 
     expect(result).toEqual([artifact])
   })
+
+  it('runs screenshot extractor only on semantic miss when hybrid policy allows it', async () => {
+    const screenshotArtifact: SelectionArtifact = {
+      id: 'artifact-screenshot-1',
+      kind: 'screenshot',
+      label: '截图区域',
+      geometry,
+      summary: '截图区域',
+      resourceId: 'selection://screenshot/1',
+      delivery: 'reference_only',
+    }
+    const registry = createExtractorRegistry([
+      {
+        kind: 'dom',
+        extract: jest.fn().mockResolvedValue([]),
+      },
+      {
+        kind: 'screenshot',
+        extract: jest.fn().mockResolvedValue([screenshotArtifact]),
+      },
+    ])
+
+    const result = await registry.extract(geometry, {
+      mode: 'hybrid',
+      screenshotPolicy: 'on_extractor_miss',
+      screenshotDelivery: 'reference_only',
+    })
+
+    expect(result).toEqual([screenshotArtifact])
+  })
 })
