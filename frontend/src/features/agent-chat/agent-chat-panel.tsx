@@ -137,8 +137,8 @@ export function AgentChatPanel() {
         className={cn(
           'fixed right-6 bottom-6 z-40',
           'flex items-center gap-2 rounded-full',
-          'bg-primary px-4 py-2.5 text-sm font-medium text-white',
-          'shadow-lg hover:bg-primary-active transition-colors',
+          'bg-primary px-4 min-h-[44px] text-sm font-medium text-white',
+          'shadow-[0_1px_3px_rgba(20,20,19,0.08)] hover:bg-primary-active transition-colors',
         )}
       >
         <MessageCircle className="h-4 w-4" />
@@ -154,7 +154,7 @@ export function AgentChatPanel() {
       data-testid="agent-chat-panel"
       data-selection-ignore="true"
       className={cn(
-        'fixed z-40 flex flex-col overflow-hidden border border-border bg-base shadow-2xl',
+        'fixed z-40 flex flex-col overflow-hidden border border-border bg-base shadow-[0_4px_12px_rgba(20,20,19,0.12)]',
         isDocked ? 'top-12 bottom-0 right-0 rounded-none' : 'rounded-xl',
       )}
       style={
@@ -177,7 +177,7 @@ export function AgentChatPanel() {
         <button
           data-testid="agent-chat-menu-button"
           onClick={toggleHistory}
-          className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-surface transition-colors"
+          className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-surface transition-colors"
           type="button"
         >
           <Menu className="h-4 w-4" />
@@ -186,7 +186,7 @@ export function AgentChatPanel() {
         <button
           data-testid="agent-chat-new-conversation-button"
           onClick={startNewConversation}
-          className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-surface transition-colors"
+          className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-surface transition-colors"
           type="button"
         >
           <Plus className="h-4 w-4" />
@@ -200,7 +200,7 @@ export function AgentChatPanel() {
           <button
             data-testid="agent-chat-restore-button"
             onClick={handleRestoreFloating}
-            className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-surface transition-colors"
+            className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-surface transition-colors"
             type="button"
           >
             <PanelRightOpen className="h-4 w-4" />
@@ -209,7 +209,7 @@ export function AgentChatPanel() {
           <button
             data-testid="agent-chat-dock-button"
             onClick={handleDock}
-            className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-surface transition-colors"
+            className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-surface transition-colors"
             type="button"
           >
             <PanelRightOpen className="h-4 w-4" />
@@ -219,7 +219,7 @@ export function AgentChatPanel() {
         <button
           data-testid="agent-chat-minimize-button"
           onClick={handleMinimize}
-          className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-surface transition-colors"
+          className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-surface transition-colors"
           type="button"
         >
           <Minus className="h-4 w-4" />
@@ -242,7 +242,7 @@ export function AgentChatPanel() {
         <div
           data-testid="agent-chat-history-drawer"
           className={cn(
-            'absolute inset-y-0 left-0 z-20 w-64 border-r border-border bg-base shadow-lg transition-transform duration-300',
+            'absolute inset-y-0 left-0 z-20 w-64 border-r border-border bg-base shadow-[0_1px_3px_rgba(20,20,19,0.08)] transition-transform duration-300',
             isHistoryOpen ? 'translate-x-0' : '-translate-x-full',
           )}
         >
@@ -253,7 +253,7 @@ export function AgentChatPanel() {
                 data-testid={`agent-chat-session-item-${session.id}`}
                 onClick={() => selectSession(session.id)}
                 className={cn(
-                  'w-full rounded-lg px-3 py-2 text-left text-sm transition-colors',
+                  'w-full rounded-md px-3 py-2 text-left text-sm transition-colors',
                   session.id === currentSessionId
                     ? 'bg-surface font-medium'
                     : 'hover:bg-surface',
@@ -286,7 +286,7 @@ export function AgentChatPanel() {
                   <div
                     key={message.id}
                     className={cn(
-                      'max-w-[85%] rounded-lg px-3 py-2 text-sm',
+                      'max-w-[85%] rounded-md px-3 py-2 text-sm',
                       message.role === 'user'
                         ? 'ml-auto bg-primary text-white'
                         : 'bg-surface text-text-primary',
@@ -323,7 +323,7 @@ export function AgentChatPanel() {
               <button
                 data-testid="selection-tool-button"
                 onClick={startSelection}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-surface text-text-primary hover:bg-base transition-colors"
+                className="flex h-11 min-w-[44px] shrink-0 items-center justify-center rounded-md border border-border bg-surface text-text-primary hover:bg-base transition-colors"
                 type="button"
                 aria-label={t('agentChat.selectionTool')}
               >
@@ -336,13 +336,13 @@ export function AgentChatPanel() {
                 onKeyDown={handleKeyDown}
                 placeholder={t('agentChat.inputPlaceholder')}
                 rows={1}
-                className="flex-1 resize-none rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-primary"
+                className="flex-1 resize-none rounded-md border border-border bg-base px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-primary"
               />
               <button
                 data-testid="agent-chat-send-button"
                 onClick={handleSend}
                 disabled={!draft.trim() && attachments.length === 0}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-white hover:bg-primary-active disabled:opacity-40 disabled:hover:bg-primary transition-colors"
+                className="flex h-11 min-w-[44px] shrink-0 items-center justify-center rounded-md bg-primary text-white hover:bg-primary-active disabled:opacity-40 disabled:hover:bg-primary transition-colors"
                 type="button"
               >
                 <Send className="h-4 w-4" />
