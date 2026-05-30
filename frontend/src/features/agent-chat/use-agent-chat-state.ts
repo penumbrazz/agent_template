@@ -5,7 +5,11 @@ import { useMemo, useState } from 'react'
 import { useT } from '@/i18n'
 
 import { MOCK_AGENT_SESSIONS, MOCK_ASSISTANT_REPLY } from './mock-data'
-import type { AgentChatMessage, AgentChatSession } from './types'
+import type {
+  AgentChatMessage,
+  AgentChatSession,
+  SendAgentChatMessagePayload,
+} from './types'
 
 const UNTITLED_SESSION_TITLE = ''
 
@@ -53,14 +57,21 @@ export function useAgentChatState() {
     setIsHistoryOpen(false)
   }
 
-  function sendMessage(content: string) {
-    const trimmed = content.trim()
-    if (!trimmed) {
+  function sendMessage(payload: SendAgentChatMessagePayload) {
+    const trimmed = payload.content.trim()
+    if (!trimmed && payload.attachments.length === 0) {
       return
     }
 
-    const userMessage = createMessage('user', trimmed)
+    const userMessage = createMessage(
+      'user',
+      trimmed || '引用页面上下文',
+    )
+    userMessage.attachments = payload.attachments
     const assistantMessage = createMessage('assistant', MOCK_ASSISTANT_REPLY)
+
+    const titleSource =
+      trimmed || payload.attachments[0]?.label || ''
 
     setSessions((previous) =>
       previous.map((session) => {
@@ -76,7 +87,9 @@ export function useAgentChatState() {
 
         return {
           ...session,
-          title: !session.title ? trimmed.slice(0, 16) : session.title,
+          title: !session.title
+            ? titleSource.slice(0, 16)
+            : session.title,
           updatedLabel: t('agentChat.messageCountJustNow', {
             count: nextMessages.length,
           }),

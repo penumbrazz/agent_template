@@ -7,11 +7,20 @@ import {
   PanelRightOpen,
   Minus,
   Send,
+  MousePointer2,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import { cn } from '@/lib/utils'
 import { useT } from '@/i18n'
+import { getRuntimeConfigSync } from '@/lib/runtime-config'
+import { createExtractorRegistry } from '@/features/selection-context/extractors/registry'
+import { extractDomSelection } from '@/features/selection-context/extractors/dom-extractor'
+import { extractTableSelection } from '@/features/selection-context/extractors/table-extractor'
+import { extractEchartsSelection } from '@/features/selection-context/extractors/echarts-extractor'
+import { SelectionOverlay } from '@/features/selection-context/selection-overlay'
+import { useSelectionOverlay } from '@/features/selection-context/use-selection-overlay'
+import type { ChatAttachment } from '@/features/selection-context/types'
 
 import {
   FLOATING_HEIGHT,
@@ -20,12 +29,33 @@ import {
 } from './use-bounded-floating-panel'
 import { useDockedPanelWidth } from './use-docked-panel-width'
 import { useAgentChatState } from './use-agent-chat-state'
+import { AttachmentChip } from './attachment-chip'
 import type { AgentChatMode } from './types'
 
 export function AgentChatPanel() {
   const [mode, setMode] = useState<AgentChatMode>('minimized')
   const [draft, setDraft] = useState('')
+  const [attachments, setAttachments] = useState<ChatAttachment[]>([])
   const t = useT()
+
+  const extractorRegistry = useMemo(
+    () =>
+      createExtractorRegistry([
+        {
+          kind: 'dom',
+          extract: extractDomSelection,
+        },
+        {
+          kind: 'table',
+          extract: extractTableSelection,
+        },
+        {
+          kind: 'chart',
+          extract: extractEchartsSelection,
+        },
+      ]),
+    [],
+  )
 
   const {
     sessions,
@@ -41,6 +71,22 @@ export function AgentChatPanel() {
 
   const { position, resetPosition, dragHandleProps } = useBoundedFloatingPanel()
   const { width: dockedWidth, resizeHandleProps } = useDockedPanelWidth()
+
+  const { isSelecting, path, startSelection, overlayProps } =
+    useSelectionOverlay(async (geometry) => {
+      const artifacts = await extractorRegistry.extract(
+        geometry,
+        getRuntimeConfigSync().selectionContextPolicy,
+      )
+      setAttachments((previous) => [
+        ...previous,
+        ...artifacts.map((artifact) => ({
+          id: artifact.id,
+          label: artifact.label,
+          artifact,
+        })),
+      ])
+    })
 
   function handleMinimize() {
     closeHistory()
@@ -62,9 +108,10 @@ export function AgentChatPanel() {
   }
 
   function handleSend() {
-    if (!draft.trim()) return
-    sendMessage(draft)
+    if (!draft.trim() && attachments.length === 0) return
+    sendMessage({ content: draft, attachments })
     setDraft('')
+    setAttachments([])
   }
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -105,6 +152,7 @@ export function AgentChatPanel() {
   return (
     <div
       data-testid="agent-chat-panel"
+      data-selection-ignore="true"
       className={cn(
         'fixed z-40 flex flex-col overflow-hidden border border-border bg-base shadow-2xl',
         isDocked ? 'top-12 bottom-0 right-0 rounded-none' : 'rounded-xl',
@@ -253,7 +301,34 @@ export function AgentChatPanel() {
 
           {/* Input area */}
           <div className="shrink-0 border-t border-border p-3">
+            {attachments.length > 0 && (
+              <div
+                data-testid="agent-chat-attachment-list"
+                className="mb-2 flex flex-wrap gap-2"
+              >
+                {attachments.map((attachment) => (
+                  <AttachmentChip
+                    key={attachment.id}
+                    attachment={attachment}
+                    onRemove={(id) =>
+                      setAttachments((previous) =>
+                        previous.filter((item) => item.id !== id),
+                      )
+                    }
+                  />
+                ))}
+              </div>
+            )}
             <div className="flex items-end gap-2">
+              <button
+                data-testid="selection-tool-button"
+                onClick={startSelection}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-surface text-text-primary hover:bg-base transition-colors"
+                type="button"
+                aria-label={t('agentChat.selectionTool')}
+              >
+                <MousePointer2 className="h-4 w-4" />
+              </button>
               <textarea
                 data-testid="agent-chat-input"
                 value={draft}
@@ -266,7 +341,7 @@ export function AgentChatPanel() {
               <button
                 data-testid="agent-chat-send-button"
                 onClick={handleSend}
-                disabled={!draft.trim()}
+                disabled={!draft.trim() && attachments.length === 0}
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-white hover:bg-primary-active disabled:opacity-40 disabled:hover:bg-primary transition-colors"
                 type="button"
               >
@@ -284,6 +359,9 @@ export function AgentChatPanel() {
           {...resizeHandleProps}
           className="absolute inset-y-0 left-0 w-1.5 cursor-col-resize hover:bg-primary/20 transition-colors"
         />
+      )}
+      {isSelecting && (
+        <SelectionOverlay path={path} overlayProps={overlayProps} />
       )}
     </div>
   )
