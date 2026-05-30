@@ -114,5 +114,8 @@ export const en = {
       'Hello, I am your Agent assistant. Using mock data to demonstrate the chat.',
     mockReply:
       'Received. This is a local mock reply for testing chat panel interactions.',
+    selectionTool: 'Select page context',
+    selectionHint: 'Select a page area. Press Esc to cancel.',
+    selectionEmpty: 'No referenceable content found',
   },
 } as const

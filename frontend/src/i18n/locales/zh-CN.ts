@@ -113,5 +113,8 @@ export const zhCN: DeepPartialMessageTree<typeof en> = {
     mockGreeting:
       '你好，我是你的 Agent 助手。这里先使用 Mock 数据展示对话效果。',
     mockReply: '收到。这是一条本地 Mock 回复，用于验证聊天面板交互。',
+    selectionTool: '圈选引用',
+    selectionHint: '圈选页面区域，Esc 取消',
+    selectionEmpty: '未识别到可引用内容',
   },
 }
