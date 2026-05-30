@@ -4,7 +4,7 @@ import {
 } from '../policy'
 
 describe('normalizeSelectionContextPolicy', () => {
-  it('returns semantic defaults for missing input', () => {
+  it('returns hybrid defaults with screenshots enabled for missing input', () => {
     expect(normalizeSelectionContextPolicy(undefined)).toEqual(
       DEFAULT_SELECTION_CONTEXT_POLICY,
     )

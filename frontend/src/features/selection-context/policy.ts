@@ -1,8 +1,8 @@
 import type { SelectionContextPolicy } from './types'
 
 export const DEFAULT_SELECTION_CONTEXT_POLICY: SelectionContextPolicy = {
-  mode: 'semantic',
-  screenshotPolicy: 'never',
+  mode: 'hybrid',
+  screenshotPolicy: 'always',
   screenshotDelivery: 'reference_only',
 }
 
