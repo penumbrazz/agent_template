@@ -10,5 +10,6 @@ export async function GET() {
     otelServiceName: config.otelServiceName,
     otelCollectorEndpoint: config.otelCollectorEndpoint,
     appVersion: config.appVersion,
+    selectionContextPolicy: config.selectionContextPolicy,
   })
 }
