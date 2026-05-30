@@ -112,6 +112,19 @@ npm run format && npm run lint
 - ✅ 使用描述性的、一致的命名：`{动作}-{元素类型}`（例如 `save-button`、`cancel-link`、`search-input`）
 - ❌ 不要在交互元素上省略 `data-testid`
 
+### 圈选引用工具
+
+⚠️ **实现或修改 chat 圈选引用能力时，必须遵循以下准则：**
+
+- 圈选引用默认必须使用语义上下文，截图只能作为受服务端部署配置控制的可选证据源。
+- 截图不得默认 inline 进入模型上下文；是否采集、预览、发送截图必须由服务端 policy 控制。
+- chat 输入区必须使用 attachment chip 承载圈选引用，不要把大段结构化上下文直接塞进 textarea。
+- 新增可圈选业务组件时，应提供稳定的 `data-selection-kind`、`data-selection-title` 和必要 metadata。
+- ECharts 图表必须注册到 selectable chart registry，通过图表实例提取 series、x/y 值和命中点位，禁止依赖截图或 OCR 推断图表数据。
+- 圈选相关代码应分层实现：Selection Capture 只负责手势和几何数据，Extractor Registry 负责语义提取，Chat Attachment Layer 负责输入区引用展示和发送 payload。
+- 如果第一版不实现上下文预算压缩，也必须在 artifact 数据结构中保留 `summary`、`raw` 或资源引用边界，方便后续增加压缩策略。
+- 所有圈选工具入口、chip、预览、删除、取消等交互元素必须添加稳定的 `data-testid`。
+
 ### 前端设计系统（DESIGN.md）
 
 ⚠️ **进行任何前端页面设计和开发时，必须严格遵循 `DESIGN.md` 中定义的设计系统。**
