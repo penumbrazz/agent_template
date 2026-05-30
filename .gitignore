@@ -28,3 +28,7 @@ shared/.venv/
 backend/test.db
 .superpowers/
 docs/superpowers/
+
+# Claude Code - local/personal config (agents & skills are shared, track those)
+.claude/settings.json
+.mcp.json
