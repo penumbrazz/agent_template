@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     DATABASE_URL: str = (
         "postgresql+psycopg2://postgres:postgres@localhost:5432/agent_template"
     )
+    DB_POOL_SIZE: int = 5
+    DB_MAX_OVERFLOW: int = 10
     REDIS_URL: str = "redis://localhost:6379/0"
 
     SECRET_KEY: str = "change-me"
@@ -43,6 +45,7 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=True,
+        extra="ignore",
     )
 
     def model_post_init(self, __context) -> None:
@@ -57,7 +60,10 @@ class Settings(BaseSettings):
                 "SECRET_KEY uses an insecure default. Change it before deploying.",
                 stacklevel=2,
             )
-        if self.ENVIRONMENT != "development" and self.ENCRYPTION_KEY == "12345678901234567890123456789012":
+        if (
+            self.ENVIRONMENT != "development"
+            and self.ENCRYPTION_KEY == "12345678901234567890123456789012"
+        ):
             raise ValueError(
                 "ENCRYPTION_KEY is set to insecure default. "
                 "Set a strong ENCRYPTION_KEY in production."

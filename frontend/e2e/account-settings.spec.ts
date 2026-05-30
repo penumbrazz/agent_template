@@ -15,13 +15,20 @@ test.describe('Account Settings', () => {
       }),
     })
 
-    // Register may fail if user already exists, that's fine
+    if (!registerRes.ok && registerRes.status !== 409) {
+      throw new Error(
+        `Registration failed: ${registerRes.status} ${await registerRes.text()}`,
+      )
+    }
+
     if (registerRes.ok) {
-      // Login to get cookies set
       await fetch(`${API_BASE}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: 'testuser', password: 'testpassword123' }),
+        body: JSON.stringify({
+          username: 'testuser',
+          password: 'testpassword123',
+        }),
       })
     }
 
@@ -42,8 +49,12 @@ test.describe('Account Settings', () => {
   })
 
   test('displays username and email', async ({ page }) => {
-    await expect(page.locator('[data-testid="account-settings"]')).toContainText('testuser')
-    await expect(page.locator('[data-testid="account-settings"]')).toContainText('test@example.com')
+    await expect(
+      page.locator('[data-testid="account-settings"]'),
+    ).toContainText('testuser')
+    await expect(
+      page.locator('[data-testid="account-settings"]'),
+    ).toContainText('test@example.com')
   })
 
   test('shows logout confirmation dialog and cancels', async ({ page }) => {

@@ -16,7 +16,9 @@ from app.services.llm_model import (
     get_model,
     list_all_models,
     list_enabled_models,
-    to_read as model_to_read,
+)
+from app.services.llm_model import to_read as model_to_read
+from app.services.llm_model import (
     toggle_model,
     update_model,
 )
@@ -65,7 +67,9 @@ def update_existing_model(
     """Update an existing LLM model configuration."""
     model = get_model(db, model_id)
     if not model:
-        raise HTTPException(status_code=404, detail="Model not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Model not found"
+        )
     model = update_model(db, model, data)
     return model_to_read(model)
 
@@ -79,7 +83,9 @@ def delete_existing_model(
     """Delete an LLM model configuration."""
     model = get_model(db, model_id)
     if not model:
-        raise HTTPException(status_code=404, detail="Model not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Model not found"
+        )
     delete_model(db, model)
 
 
@@ -92,6 +98,8 @@ def toggle_model_status(
     """Toggle the enabled status of an LLM model."""
     model = get_model(db, model_id)
     if not model:
-        raise HTTPException(status_code=404, detail="Model not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Model not found"
+        )
     model = toggle_model(db, model)
     return {"id": model.id, "is_enabled": model.is_enabled}

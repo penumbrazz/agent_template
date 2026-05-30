@@ -50,9 +50,7 @@ function checkOverlay(
     } else if (isTree(v)) {
       const overlaySub = overlay === undefined ? undefined : overlay[k]
       if (overlaySub !== undefined && !isTree(overlaySub)) {
-        errors.push(
-          `${subPath} should be an object, got ${typeof overlaySub}`,
-        )
+        errors.push(`${subPath} should be an object, got ${typeof overlaySub}`)
         continue
       }
       checkOverlay(v, overlaySub, subPath, errors, missing)

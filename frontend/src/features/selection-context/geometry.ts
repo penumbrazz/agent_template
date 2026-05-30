@@ -25,8 +25,7 @@ export function isPointInPolygon(
   ) {
     const currentPoint = polygon[index]
     const previousPoint = polygon[previous]
-    const crossesY =
-      currentPoint.y > point.y !== previousPoint.y > point.y
+    const crossesY = currentPoint.y > point.y !== previousPoint.y > point.y
     const xOnSegment =
       ((previousPoint.x - currentPoint.x) * (point.y - currentPoint.y)) /
         (previousPoint.y - currentPoint.y) +

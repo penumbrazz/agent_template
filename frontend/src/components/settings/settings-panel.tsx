@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { useT } from '@/i18n'
 import {
   Dialog,
@@ -35,7 +36,7 @@ export function SettingsPanel() {
         </Button>
       </DialogTrigger>
       <DialogContent
-        className="flex flex-col max-w-[700px] w-[700px] gap-0 p-0 h-[80vh] rounded-xl"
+        className="flex flex-col max-w-[700px] w-[700px] gap-0 p-0 h-[80vh] rounded-lg"
         data-testid="settings-panel"
       >
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
@@ -46,33 +47,36 @@ export function SettingsPanel() {
             <button
               data-testid="tab-account"
               onClick={() => setActiveTab('account')}
-              className={`text-left px-3 py-2 rounded-md text-sm transition-colors ${
+              className={cn(
+                'text-left px-3 py-2 rounded-md text-sm transition-colors',
                 activeTab === 'account'
                   ? 'bg-primary text-white'
-                  : 'text-text-muted hover:bg-border'
-              }`}
+                  : 'text-text-muted hover:bg-border',
+              )}
             >
               {t('settings.tabs.account')}
             </button>
             <button
               data-testid="tab-general"
               onClick={() => setActiveTab('general')}
-              className={`text-left px-3 py-2 rounded-md text-sm transition-colors ${
+              className={cn(
+                'text-left px-3 py-2 rounded-md text-sm transition-colors',
                 activeTab === 'general'
                   ? 'bg-primary text-white'
-                  : 'text-text-muted hover:bg-border'
-              }`}
+                  : 'text-text-muted hover:bg-border',
+              )}
             >
               {t('settings.tabs.general')}
             </button>
             <button
               data-testid="tab-models"
               onClick={() => setActiveTab('models')}
-              className={`text-left px-3 py-2 rounded-md text-sm transition-colors ${
+              className={cn(
+                'text-left px-3 py-2 rounded-md text-sm transition-colors',
                 activeTab === 'models'
                   ? 'bg-primary text-white'
-                  : 'text-text-muted hover:bg-border'
-              }`}
+                  : 'text-text-muted hover:bg-border',
+              )}
             >
               {t('settings.tabs.modelConfig')}
             </button>

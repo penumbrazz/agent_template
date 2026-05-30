@@ -1,3 +1,5 @@
+import { translate } from '@/i18n'
+
 import type {
   ScreenshotDelivery,
   ScreenshotSelectionArtifact,
@@ -12,9 +14,9 @@ export async function extractScreenshotSelection(
     {
       id: `artifact-screenshot-${geometry.id}`,
       kind: 'screenshot',
-      label: '截图区域',
+      label: translate('selection.screenshotLabel'),
       geometry,
-      summary: '截图证据已按引用保存，默认不进入模型上下文',
+      summary: translate('selection.screenshotSummary'),
       resourceId: `selection://screenshot/${geometry.id}`,
       delivery,
     },

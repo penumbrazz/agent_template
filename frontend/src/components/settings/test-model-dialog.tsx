@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import type { LLMModel } from '@/types/model'
+import { cn } from '@/lib/utils'
 import { providersApi } from '@/apis/providers'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -54,7 +55,11 @@ export function TestModelDialog({
       const res = await providersApi.test(providerId, selectedModelId)
       setResult(res)
     } catch {
-      setResult({ success: false, latency_ms: 0, error: translate('settings.testModel.requestFailed') })
+      setResult({
+        success: false,
+        latency_ms: 0,
+        error: translate('settings.testModel.requestFailed'),
+      })
     } finally {
       setLoading(false)
     }
@@ -71,7 +76,9 @@ export function TestModelDialog({
             <Label>{t('settings.testModel.selectModel')}</Label>
             <Select value={selectedModelId} onValueChange={setSelectedModelId}>
               <SelectTrigger data-testid="test-model-select">
-                <SelectValue placeholder={t('settings.testModel.selectModel')} />
+                <SelectValue
+                  placeholder={t('settings.testModel.selectModel')}
+                />
               </SelectTrigger>
               <SelectContent>
                 {models.map((m) => (
@@ -84,11 +91,12 @@ export function TestModelDialog({
           </div>
           {result && (
             <div
-              className={`flex items-center gap-2 p-3 rounded-md text-sm ${
+              className={cn(
+                'flex items-center gap-2 p-3 rounded-md text-sm',
                 result.success
-                  ? 'bg-green-50 text-green-700'
-                  : 'bg-red-50 text-red-700'
-              }`}
+                  ? 'bg-success/10 text-success'
+                  : 'bg-error/10 text-error',
+              )}
               data-testid="test-result"
             >
               {result.success ? (
@@ -98,8 +106,12 @@ export function TestModelDialog({
               )}
               <span>
                 {result.success
-                  ? translate('settings.testModel.connectionSuccessMs', { latencyMs: result.latency_ms })
-                  : translate('settings.testModel.connectionFailedError', { error: result.error })}
+                  ? translate('settings.testModel.connectionSuccessMs', {
+                      latencyMs: result.latency_ms,
+                    })
+                  : translate('settings.testModel.connectionFailedError', {
+                      error: result.error,
+                    })}
               </span>
             </div>
           )}

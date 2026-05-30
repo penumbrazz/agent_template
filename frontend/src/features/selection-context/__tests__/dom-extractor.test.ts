@@ -20,7 +20,16 @@ describe('extractDomSelection', () => {
     `
     const button = document.querySelector('button') as HTMLButtonElement
     button.getBoundingClientRect = () =>
-      ({ x: 10, y: 10, width: 100, height: 40, top: 10, left: 10, right: 110, bottom: 50 } as DOMRect)
+      ({
+        x: 10,
+        y: 10,
+        width: 100,
+        height: 40,
+        top: 10,
+        left: 10,
+        right: 110,
+        bottom: 50,
+      }) as DOMRect
 
     const result = await extractDomSelection(geometry())
 

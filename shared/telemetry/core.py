@@ -28,6 +28,68 @@ _telemetry_initialized = False
 _telemetry_enabled = False
 
 
+def _build_resource(
+    service_name: str,
+    service_version: str,
+    deployment_environment: Optional[str],
+) -> "Resource":
+    """Create an OpenTelemetry Resource with service attributes.
+
+    Args:
+        service_name: Name of the service.
+        service_version: Version of the service.
+        deployment_environment: Deployment environment override.
+
+    Returns:
+        Configured Resource instance.
+    """
+    from opentelemetry.sdk.resources import Resource
+
+    resource_attributes = {
+        "service.name": service_name,
+        "service.version": service_version,
+    }
+
+    if deployment_environment:
+        resource_attributes["deployment.environment"] = deployment_environment
+    else:
+        # Try to get from environment
+        env = os.getenv("ENVIRONMENT", os.getenv("ENV", "development"))
+        resource_attributes["deployment.environment"] = env
+
+    return Resource.create(resource_attributes)
+
+
+def _log_http_capture_settings(
+    capture_request_headers: bool,
+    capture_request_body: bool,
+    capture_response_headers: bool,
+    capture_response_body: bool,
+    max_body_size: int,
+) -> None:
+    """Log the HTTP capture configuration summary.
+
+    Args:
+        capture_request_headers: Whether request headers are captured.
+        capture_request_body: Whether request bodies are captured.
+        capture_response_headers: Whether response headers are captured.
+        capture_response_body: Whether response bodies are captured.
+        max_body_size: Maximum body capture size in bytes.
+    """
+    http_capture_info = []
+    if capture_request_headers:
+        http_capture_info.append("request_headers")
+    if capture_request_body:
+        http_capture_info.append("request_body")
+    if capture_response_headers:
+        http_capture_info.append("response_headers")
+    if capture_response_body:
+        http_capture_info.append("response_body")
+
+    capture_str = ", ".join(http_capture_info) if http_capture_info else "none"
+    logger.info(f"HTTP capture: [{capture_str}], max_body_size: {max_body_size} bytes")
+
+
 def init_telemetry(
     service_name: str,
     enabled: bool = True,
@@ -88,27 +150,14 @@ def init_telemetry(
 
     try:
         # Lazy import OpenTelemetry modules only when enabled
-        from opentelemetry.sdk.resources import Resource
-
         from shared.telemetry.providers import (
             init_meter_provider,
             init_tracer_provider,
         )
 
-        # Create resource attributes
-        resource_attributes = {
-            "service.name": service_name,
-            "service.version": service_version,
-        }
-
-        if deployment_environment:
-            resource_attributes["deployment.environment"] = deployment_environment
-        else:
-            # Try to get from environment
-            env = os.getenv("ENVIRONMENT", os.getenv("ENV", "development"))
-            resource_attributes["deployment.environment"] = env
-
-        resource = Resource.create(resource_attributes)
+        resource = _build_resource(
+            service_name, service_version, deployment_environment
+        )
 
         # Initialize TracerProvider (always enabled when telemetry is enabled)
         init_tracer_provider(resource, otlp_endpoint, sampler_ratio)
@@ -123,22 +172,16 @@ def init_telemetry(
         _telemetry_initialized = True
         _telemetry_enabled = True
 
-        # Log HTTP capture settings
-        http_capture_info = []
-        if capture_request_headers:
-            http_capture_info.append("request_headers")
-        if capture_request_body:
-            http_capture_info.append("request_body")
-        if capture_response_headers:
-            http_capture_info.append("response_headers")
-        if capture_response_body:
-            http_capture_info.append("response_body")
-
-        capture_str = ", ".join(http_capture_info) if http_capture_info else "none"
         logger.info(
             f"OpenTelemetry initialized successfully for service '{service_name}' "
-            f"with endpoint '{otlp_endpoint}', sampler ratio {sampler_ratio}, "
-            f"HTTP capture: [{capture_str}], max_body_size: {max_body_size} bytes"
+            f"with endpoint '{otlp_endpoint}', sampler ratio {sampler_ratio}"
+        )
+        _log_http_capture_settings(
+            capture_request_headers,
+            capture_request_body,
+            capture_response_headers,
+            capture_response_body,
+            max_body_size,
         )
 
         return True

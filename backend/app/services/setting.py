@@ -28,7 +28,9 @@ def upsert_setting(db: Session, key: str, value: str) -> Setting:
     return setting
 
 
-def clear_default_model_if_unavailable(db: Session, available_model_ids: set[str]) -> None:
+def clear_default_model_if_unavailable(
+    db: Session, available_model_ids: set[str]
+) -> None:
     """Clear the default model setting if its ID is not in the available set."""
     setting = get_setting(db, "default_model_id")
     if setting and setting.value and setting.value not in available_model_ids:

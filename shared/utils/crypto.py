@@ -296,7 +296,10 @@ def decrypt_attachment(encrypted_data: bytes) -> bytes:
         return b""
 
     # Try AES-GCM (version byte 0x01)
-    if encrypted_data[:1] == _VERSION_BYTE and len(encrypted_data) > 1 + _NONCE_SIZE + 16:
+    if (
+        encrypted_data[:1] == _VERSION_BYTE
+        and len(encrypted_data) > 1 + _NONCE_SIZE + 16
+    ):
         try:
             key = _get_attachment_encryption_key()
             return _aes_gcm_decrypt(key, encrypted_data)

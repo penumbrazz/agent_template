@@ -1,4 +1,6 @@
+import { translate } from '@/i18n'
 import type { DomSelectionArtifact, SelectionGeometry } from '../types'
+import { intersectsSelection } from './geometry-utils'
 
 export async function extractDomSelection(
   geometry: SelectionGeometry,
@@ -37,7 +39,7 @@ export async function extractDomSelection(
     {
       id: `artifact-dom-${geometry.id}`,
       kind: 'dom',
-      label: '页面内容',
+      label: translate('selection.domLabel'),
       geometry,
       summary: text.slice(0, 120) || testIds.join(', '),
       text,
@@ -50,22 +52,4 @@ export async function extractDomSelection(
 function isVisible(element: HTMLElement): boolean {
   const style = window.getComputedStyle(element)
   return style.display !== 'none' && style.visibility !== 'hidden'
-}
-
-function intersectsSelection(
-  element: HTMLElement,
-  geometry: SelectionGeometry,
-): boolean {
-  if (element.closest('[data-selection-ignore="true"]')) {
-    return false
-  }
-
-  const rect = element.getBoundingClientRect()
-  const box = geometry.boundingBox
-  return (
-    rect.right >= box.x &&
-    rect.left <= box.x + box.width &&
-    rect.bottom >= box.y &&
-    rect.top <= box.y + box.height
-  )
 }

@@ -12,8 +12,9 @@ export type DeepPartialMessageTree<T> = {
       : never
 }
 
-type Join<Prefix extends string, Key extends string> =
-  Prefix extends '' ? Key : `${Prefix}.${Key}`
+type Join<Prefix extends string, Key extends string> = Prefix extends ''
+  ? Key
+  : `${Prefix}.${Key}`
 
 export type MessageKey<T, Prefix extends string = ''> = {
   [K in Extract<keyof T, string>]: T[K] extends string

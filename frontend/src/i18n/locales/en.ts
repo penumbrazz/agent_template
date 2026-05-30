@@ -118,4 +118,16 @@ export const en = {
     selectionHint: 'Select a page area. Press Esc to cancel.',
     selectionEmpty: 'No referenceable content found',
   },
+  selection: {
+    domLabel: 'Page content',
+    tableLabel: 'Table · {title} · {rows} rows',
+    tableLabelNoTitle: 'Table · {rows} rows',
+    tableSummary: '{columns}; {rows} rows selected',
+    chartLabel: 'Chart · {title} · {points} points',
+    chartSummary: '{title}: {points} points selected',
+    screenshotLabel: 'Screenshot area',
+    screenshotSummary:
+      'Screenshot saved as reference, not included in model context by default',
+    columnFallback: 'Column {index}',
+  },
 } as const

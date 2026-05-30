@@ -39,6 +39,46 @@ from opentelemetry.util.types import Attributes
 
 logger = logging.getLogger(__name__)
 
+# Shared set of Redis command span names used by both sampler and processor
+_FILTERED_REDIS_COMMANDS = frozenset(
+    [
+        "GET",
+        "SET",
+        "DEL",
+        "MGET",
+        "MSET",
+        "HGET",
+        "HSET",
+        "HDEL",
+        "HGETALL",
+        "LPUSH",
+        "RPUSH",
+        "LPOP",
+        "RPOP",
+        "LRANGE",
+        "SADD",
+        "SREM",
+        "SMEMBERS",
+        "ZADD",
+        "ZREM",
+        "ZRANGE",
+        "PUBLISH",
+        "SUBSCRIBE",
+        "PSUBSCRIBE",
+        "UNSUBSCRIBE",
+        "PUNSUBSCRIBE",
+        "PING",
+        "EXISTS",
+        "EXPIRE",
+        "TTL",
+        "KEYS",
+        "SCAN",
+        "DBSIZE",
+        "SETNX",
+        "SETEX",
+    ]
+)
+
 
 class BusinessContextSpanProcessor(SpanProcessor):
     """
@@ -116,44 +156,7 @@ class FilteringParentBasedSampler(Sampler):
     )
 
     # Redis command span names (uppercase command names)
-    REDIS_COMMANDS = frozenset(
-        [
-            "GET",
-            "SET",
-            "DEL",
-            "MGET",
-            "MSET",
-            "HGET",
-            "HSET",
-            "HDEL",
-            "HGETALL",
-            "LPUSH",
-            "RPUSH",
-            "LPOP",
-            "RPOP",
-            "LRANGE",
-            "SADD",
-            "SREM",
-            "SMEMBERS",
-            "ZADD",
-            "ZREM",
-            "ZRANGE",
-            "PUBLISH",
-            "SUBSCRIBE",
-            "PSUBSCRIBE",
-            "UNSUBSCRIBE",
-            "PUNSUBSCRIBE",
-            "PING",
-            "EXISTS",
-            "EXPIRE",
-            "TTL",
-            "KEYS",
-            "SCAN",
-            "DBSIZE",
-            "SETNX",
-            "SETEX",
-        ]
-    )
+    REDIS_COMMANDS = _FILTERED_REDIS_COMMANDS
 
     def __init__(
         self,
@@ -362,44 +365,7 @@ class RedisSpanFilteringProcessor(SpanProcessor):
     """
 
     # Redis command span names
-    REDIS_COMMANDS = frozenset(
-        [
-            "GET",
-            "SET",
-            "DEL",
-            "MGET",
-            "MSET",
-            "HGET",
-            "HSET",
-            "HDEL",
-            "HGETALL",
-            "LPUSH",
-            "RPUSH",
-            "LPOP",
-            "RPOP",
-            "LRANGE",
-            "SADD",
-            "SREM",
-            "SMEMBERS",
-            "ZADD",
-            "ZREM",
-            "ZRANGE",
-            "PUBLISH",
-            "SUBSCRIBE",
-            "PSUBSCRIBE",
-            "UNSUBSCRIBE",
-            "PUNSUBSCRIBE",
-            "PING",
-            "EXISTS",
-            "EXPIRE",
-            "TTL",
-            "KEYS",
-            "SCAN",
-            "DBSIZE",
-            "SETNX",
-            "SETEX",
-        ]
-    )
+    REDIS_COMMANDS = _FILTERED_REDIS_COMMANDS
 
     def __init__(self):
         """Initialize the Redis filtering processor."""

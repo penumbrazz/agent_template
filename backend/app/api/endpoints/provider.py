@@ -18,7 +18,9 @@ from app.services.provider import (
     get_provider,
     list_providers,
     test_provider,
-    to_read as provider_to_read,
+)
+from app.services.provider import to_read as provider_to_read
+from app.services.provider import (
     update_provider,
     validate_provider,
 )
@@ -67,7 +69,9 @@ def update_existing_provider(
     """Update an existing provider configuration."""
     provider = get_provider(db, provider_id)
     if not provider:
-        raise HTTPException(status_code=404, detail="Provider not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Provider not found"
+        )
     provider = update_provider(db, provider, data)
     return provider_to_read(provider)
 
@@ -81,7 +85,9 @@ def delete_existing_provider(
     """Delete a provider configuration."""
     provider = get_provider(db, provider_id)
     if not provider:
-        raise HTTPException(status_code=404, detail="Provider not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Provider not found"
+        )
     delete_provider(db, provider)
 
 
@@ -94,7 +100,9 @@ def fetch_provider_models(
     """Fetch available models from a provider's API."""
     provider = get_provider(db, provider_id)
     if not provider:
-        raise HTTPException(status_code=404, detail="Provider not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Provider not found"
+        )
     try:
         new_models = fetch_models(db, provider)
     except Exception as e:
@@ -118,7 +126,9 @@ def test_provider_connection(
     """Test connectivity to a provider endpoint."""
     provider = get_provider(db, provider_id)
     if not provider:
-        raise HTTPException(status_code=404, detail="Provider not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Provider not found"
+        )
     model_id = body.model_id if body else None
     result = test_provider(db, provider, model_id)
     return result

@@ -251,7 +251,7 @@ function ProviderFormBody({
 
       {testResult?.passed && (
         <div
-          className="flex items-center gap-2 text-sm text-green-600 px-1"
+          className="flex items-center gap-2 text-sm text-success px-1"
           data-testid="test-success-indicator"
         >
           <CheckCircle2 className="h-4 w-4" />

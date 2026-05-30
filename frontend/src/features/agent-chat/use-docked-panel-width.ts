@@ -8,7 +8,10 @@ export const DOCKED_MAX_WIDTH_RATIO = 0.5
 export const DOCKED_WIDTH_STORAGE_KEY = 'agent-chat:docked-width'
 
 function getMaxWidth(): number {
-  return Math.max(DOCKED_MIN_WIDTH, Math.floor(window.innerWidth * DOCKED_MAX_WIDTH_RATIO))
+  return Math.max(
+    DOCKED_MIN_WIDTH,
+    Math.floor(window.innerWidth * DOCKED_MAX_WIDTH_RATIO),
+  )
 }
 
 function clampWidth(width: number): number {
@@ -31,7 +34,7 @@ export function useDockedPanelWidth() {
 
   useEffect(() => {
     function handleResize() {
-      setWidth(previous => clampWidth(previous))
+      setWidth((previous) => clampWidth(previous))
     }
 
     window.addEventListener('resize', handleResize)
@@ -51,7 +54,9 @@ export function useDockedPanelWidth() {
     onPointerMove: (event: React.PointerEvent<HTMLElement>) => {
       if (!dragStart.current) return
 
-      const newWidth = dragStart.current.originWidth - (event.clientX - dragStart.current.startX)
+      const newWidth =
+        dragStart.current.originWidth -
+        (event.clientX - dragStart.current.startX)
       setWidth(clampWidth(newWidth))
     },
     onPointerUp: (event: React.PointerEvent<HTMLElement>) => {

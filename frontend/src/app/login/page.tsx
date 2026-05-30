@@ -29,7 +29,9 @@ export default function LoginPage() {
       await login(username, password)
       router.replace('/')
     } catch {
-      toast.error(translate('auth.loginFailed'), { description: translate('auth.invalidCredentials') })
+      toast.error(translate('auth.loginFailed'), {
+        description: translate('auth.invalidCredentials'),
+      })
     } finally {
       setSubmitting(false)
     }
@@ -38,17 +40,16 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-base px-6">
       <div className="w-full max-w-sm">
-        <h1
-          className="text-center text-[28px] font-normal leading-tight tracking-[-0.3px]"
-          style={{ fontFamily: 'Cormorant Garamond, Tiempos Headline, serif' }}
-        >
+        <h1 className="text-center text-display-sm font-display font-normal leading-tight tracking-[-0.3px]">
           Agent Template
         </h1>
-        <p className="mt-2 text-center text-sm text-text-muted">{t('auth.loginToContinue')}</p>
+        <p className="mt-2 text-center text-sm text-text-muted">
+          {t('auth.loginToContinue')}
+        </p>
 
         <form
           onSubmit={handleSubmit}
-          className="mt-8 rounded-xl border border-border bg-base p-6"
+          className="mt-8 rounded-lg border border-border bg-base p-6"
         >
           <div className="space-y-4">
             <div>

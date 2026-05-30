@@ -51,7 +51,9 @@ def _clear_refresh_cookie(response: Response) -> None:
 
 @router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 @limiter.limit("5/minute")
-def register(request: Request, user_in: UserCreate, db: Session = Depends(get_db)) -> User:
+def register(
+    request: Request, user_in: UserCreate, db: Session = Depends(get_db)
+) -> User:
     """Register a new user account."""
     try:
         return register_user(db, user_in)
@@ -65,7 +67,12 @@ def register(request: Request, user_in: UserCreate, db: Session = Depends(get_db
 
 @router.post("/login", response_model=TokenWithExpiry)
 @limiter.limit("10/minute")
-def login(request: Request, response: Response, user_in: UserLogin, db: Session = Depends(get_db)) -> dict:
+def login(
+    request: Request,
+    response: Response,
+    user_in: UserLogin,
+    db: Session = Depends(get_db),
+) -> dict:
     """Authenticate a user and return JWT tokens."""
     try:
         user = authenticate_user(db, user_in)
@@ -100,9 +107,7 @@ def refresh(
     try:
         result = refresh_user_token(db, refresh_token)
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
     _set_refresh_cookie(response, result.pop("refresh_token"))
     return result
 

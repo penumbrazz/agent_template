@@ -42,6 +42,63 @@ def _get_tracer(name: str):
         return None
 
 
+def _build_span_attributes(
+    static_attributes: Optional[Dict[str, Any]],
+    extract_attributes: Optional[Callable[..., Dict[str, Any]]],
+    args: tuple,
+    kwargs: dict,
+) -> Dict[str, Any]:
+    """Build span attributes from static and dynamic sources.
+
+    Args:
+        static_attributes: Static attributes dict.
+        extract_attributes: Optional callable to extract dynamic attributes.
+        args: Positional arguments passed to the decorated function.
+        kwargs: Keyword arguments passed to the decorated function.
+
+    Returns:
+        Merged dict of span attributes.
+    """
+    span_attributes = dict(static_attributes or {})
+
+    if extract_attributes:
+        try:
+            dynamic_attrs = extract_attributes(*args, **kwargs)
+            if dynamic_attrs:
+                span_attributes.update(dynamic_attrs)
+        except Exception as e:
+            logger.debug(f"Failed to extract attributes: {e}")
+
+    return span_attributes
+
+
+def _finalize_span(span: Any, result: Any) -> None:
+    """Set span status based on the function result.
+
+    Inspects the result for a ``value`` attribute and maps common
+    status strings (completed/success/failed/error) to the
+    corresponding OpenTelemetry span status.
+
+    Args:
+        span: The OpenTelemetry span to update.
+        result: The return value of the traced function.
+    """
+    from opentelemetry import trace as otel_trace
+
+    if hasattr(result, "value"):
+        result_value = (
+            result.value.lower()
+            if hasattr(result.value, "lower")
+            else str(result.value).lower()
+        )
+        if result_value in ("completed", "success"):
+            span.set_status(otel_trace.Status(otel_trace.StatusCode.OK))
+        elif result_value in ("failed", "error"):
+            span.set_status(
+                otel_trace.Status(otel_trace.StatusCode.ERROR, "Task failed")
+            )
+
+
 def trace_async(
     span_name: Optional[str] = None,
     tracer_name: str = "executor",
@@ -90,16 +147,9 @@ def trace_async(
             name = span_name or func.__name__
 
             # Build attributes
-            span_attributes = dict(attributes or {})
-
-            # Extract dynamic attributes if extractor provided
-            if extract_attributes:
-                try:
-                    dynamic_attrs = extract_attributes(*args, **kwargs)
-                    if dynamic_attrs:
-                        span_attributes.update(dynamic_attrs)
-                except Exception as e:
-                    logger.debug(f"Failed to extract attributes: {e}")
+            span_attributes = _build_span_attributes(
+                attributes, extract_attributes, args, kwargs
+            )
 
             # Import OpenTelemetry types
             try:
@@ -112,19 +162,7 @@ def trace_async(
                         result = await func(*args, **kwargs)
 
                         # Set span status based on result
-                        # Check if result has a 'value' attribute (like TaskStatus)
-                        if hasattr(result, "value"):
-                            result_value = (
-                                result.value.lower()
-                                if hasattr(result.value, "lower")
-                                else str(result.value).lower()
-                            )
-                            if result_value in ("completed", "success"):
-                                span.set_status(trace.Status(trace.StatusCode.OK))
-                            elif result_value in ("failed", "error"):
-                                span.set_status(
-                                    trace.Status(trace.StatusCode.ERROR, "Task failed")
-                                )
+                        _finalize_span(span, result)
 
                         return result
                     except Exception as e:
@@ -179,16 +217,9 @@ def trace_sync(
             name = span_name or func.__name__
 
             # Build attributes
-            span_attributes = dict(attributes or {})
-
-            # Extract dynamic attributes if extractor provided
-            if extract_attributes:
-                try:
-                    dynamic_attrs = extract_attributes(*args, **kwargs)
-                    if dynamic_attrs:
-                        span_attributes.update(dynamic_attrs)
-                except Exception as e:
-                    logger.debug(f"Failed to extract attributes: {e}")
+            span_attributes = _build_span_attributes(
+                attributes, extract_attributes, args, kwargs
+            )
 
             # Import OpenTelemetry types
             try:
@@ -201,18 +232,7 @@ def trace_sync(
                         result = func(*args, **kwargs)
 
                         # Set span status based on result
-                        if hasattr(result, "value"):
-                            result_value = (
-                                result.value.lower()
-                                if hasattr(result.value, "lower")
-                                else str(result.value).lower()
-                            )
-                            if result_value in ("completed", "success"):
-                                span.set_status(trace.Status(trace.StatusCode.OK))
-                            elif result_value in ("failed", "error"):
-                                span.set_status(
-                                    trace.Status(trace.StatusCode.ERROR, "Task failed")
-                                )
+                        _finalize_span(span, result)
 
                         return result
                     except Exception as e:

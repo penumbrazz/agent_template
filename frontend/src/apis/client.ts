@@ -59,7 +59,10 @@ class APIClient {
     return refreshPromise
   }
 
-  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  private async request<T>(
+    endpoint: string,
+    options: RequestInit = {},
+  ): Promise<T> {
     const url = `${this.getBaseURL()}${endpoint}`
 
     const headers: Record<string, string> = {

@@ -54,27 +54,19 @@ describe('translate', () => {
   })
 
   it('interpolates values into template', () => {
-    expect(t('greeting.hello', { name: 'World' }, 'en')).toBe(
-      'Hello, World!',
-    )
+    expect(t('greeting.hello', { name: 'World' }, 'en')).toBe('Hello, World!')
   })
 
   it('interpolates Chinese values', () => {
-    expect(t('greeting.hello', { name: '世界' }, 'zh-CN')).toBe(
-      '你好，世界！',
-    )
+    expect(t('greeting.hello', { name: '世界' }, 'zh-CN')).toBe('你好，世界！')
   })
 
   it('returns key when missing in both locales', () => {
-    expect(t('common.nonexistent', undefined, 'en')).toBe(
-      'common.nonexistent',
-    )
+    expect(t('common.nonexistent', undefined, 'en')).toBe('common.nonexistent')
   })
 
   it('handles nested keys', () => {
-    expect(t('greeting.nested.deep', undefined, 'en')).toBe(
-      'Deep value',
-    )
+    expect(t('greeting.nested.deep', undefined, 'en')).toBe('Deep value')
   })
 
   it('leaves unmatched placeholders unchanged', () => {
@@ -82,12 +74,8 @@ describe('translate', () => {
   })
 
   it('handles null and undefined interpolation values', () => {
-    expect(t('greeting.hello', { name: null }, 'en')).toBe(
-      'Hello, !',
-    )
-    expect(t('greeting.hello', { name: undefined }, 'en')).toBe(
-      'Hello, !',
-    )
+    expect(t('greeting.hello', { name: null }, 'en')).toBe('Hello, !')
+    expect(t('greeting.hello', { name: undefined }, 'en')).toBe('Hello, !')
   })
 })
 

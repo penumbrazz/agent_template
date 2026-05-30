@@ -117,4 +117,15 @@ export const zhCN: DeepPartialMessageTree<typeof en> = {
     selectionHint: '圈选页面区域，Esc 取消',
     selectionEmpty: '未识别到可引用内容',
   },
+  selection: {
+    domLabel: '页面内容',
+    tableLabel: '表格 · {title} · {rows} 行',
+    tableLabelNoTitle: '表格 · {rows} 行',
+    tableSummary: '{columns}；选中 {rows} 行',
+    chartLabel: '图表 · {title} · {points} 个点',
+    chartSummary: '{title}：选中 {points} 个点',
+    screenshotLabel: '截图区域',
+    screenshotSummary: '截图证据已按引用保存，默认不进入模型上下文',
+    columnFallback: '列 {index}',
+  },
 }

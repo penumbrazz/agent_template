@@ -17,8 +17,12 @@ import type { Locale } from '@/i18n'
 
 export function GeneralSettings() {
   const { data: settings } = useSWR('settings', () => settingsApi.list())
-  const { data: models } = useSWR('enabled-models', () => modelsApi.listEnabled())
-  const { mutate: mutateSettings } = useSWR('settings', () => settingsApi.list())
+  const { data: models } = useSWR('enabled-models', () =>
+    modelsApi.listEnabled(),
+  )
+  const { mutate: mutateSettings } = useSWR('settings', () =>
+    settingsApi.list(),
+  )
   const t = useT()
   const currentLocale = useLocale()
 
@@ -30,7 +34,10 @@ export function GeneralSettings() {
       await settingsApi.update('default_model_id', value)
       mutateSettings()
     } catch (e) {
-      const message = e instanceof Error ? e.message : translate('settings.general.saveFailed')
+      const message =
+        e instanceof Error
+          ? e.message
+          : translate('settings.general.saveFailed')
       toast.error(message)
     }
   }
@@ -42,7 +49,10 @@ export function GeneralSettings() {
         <Label htmlFor="language" data-testid="language-label">
           {t('settings.general.language')}
         </Label>
-        <Select value={currentLocale} onValueChange={(value) => setLocale(value as Locale)}>
+        <Select
+          value={currentLocale}
+          onValueChange={(value) => setLocale(value as Locale)}
+        >
           <SelectTrigger id="language" data-testid="language-select">
             <SelectValue />
           </SelectTrigger>

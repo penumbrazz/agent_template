@@ -39,7 +39,10 @@ export async function POST(request: NextRequest): Promise<Response> {
   // Check if telemetry is enabled via runtime config
   const runtimeConfig = getRuntimeConfigSync()
   if (!runtimeConfig.otelEnabled) {
-    return NextResponse.json({ message: 'Telemetry is disabled' }, { status: 200 })
+    return NextResponse.json(
+      { message: 'Telemetry is disabled' },
+      { status: 200 },
+    )
   }
 
   try {
@@ -47,7 +50,8 @@ export async function POST(request: NextRequest): Promise<Response> {
     const body = await request.arrayBuffer()
 
     // Preserve the content type from the original request
-    const contentType = request.headers.get('content-type') || 'application/json'
+    const contentType =
+      request.headers.get('content-type') || 'application/json'
 
     // Get OTEL Collector endpoint from runtime config
     const collectorEndpoint = getOtelCollectorEndpoint()
@@ -63,10 +67,12 @@ export async function POST(request: NextRequest): Promise<Response> {
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error(`[OTLP Proxy] Collector error: ${response.status} - ${errorText}`)
+      console.error(
+        `[OTLP Proxy] Collector error: ${response.status} - ${errorText}`,
+      )
       return NextResponse.json(
         { error: 'Failed to send traces to collector' },
-        { status: response.status }
+        { status: response.status },
       )
     }
 
@@ -77,7 +83,10 @@ export async function POST(request: NextRequest): Promise<Response> {
     console.error('[OTLP Proxy] Error forwarding traces:', error)
 
     // Return a generic error response
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    )
   }
 }
 

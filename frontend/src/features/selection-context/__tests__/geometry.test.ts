@@ -30,13 +30,10 @@ describe('selection geometry', () => {
   it('computes distance from point to path', () => {
     expect(
       Math.round(
-        distanceToPath(
-          { x: 5, y: 5 },
-          [
-            { x: 0, y: 0 },
-            { x: 10, y: 0 },
-          ],
-        ),
+        distanceToPath({ x: 5, y: 5 }, [
+          { x: 0, y: 0 },
+          { x: 10, y: 0 },
+        ]),
       ),
     ).toBe(5)
   })

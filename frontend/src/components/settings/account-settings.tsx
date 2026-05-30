@@ -61,7 +61,9 @@ export function AccountSettings() {
         <DialogContent className="max-w-[400px]">
           <DialogHeader>
             <DialogTitle>{t('auth.logout')}</DialogTitle>
-            <DialogDescription data-testid="logout-confirm-desc">{t('settings.account.logoutConfirm')}</DialogDescription>
+            <DialogDescription data-testid="logout-confirm-desc">
+              {t('settings.account.logoutConfirm')}
+            </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button

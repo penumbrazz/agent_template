@@ -20,8 +20,14 @@ function getDefaultPosition(): FloatingPanelPosition {
 }
 
 function clampPosition(position: FloatingPanelPosition): FloatingPanelPosition {
-  const maxX = Math.max(FLOATING_MARGIN, window.innerWidth - FLOATING_WIDTH - FLOATING_MARGIN)
-  const maxY = Math.max(FLOATING_MARGIN, window.innerHeight - FLOATING_HEIGHT - FLOATING_MARGIN)
+  const maxX = Math.max(
+    FLOATING_MARGIN,
+    window.innerWidth - FLOATING_WIDTH - FLOATING_MARGIN,
+  )
+  const maxY = Math.max(
+    FLOATING_MARGIN,
+    window.innerHeight - FLOATING_HEIGHT - FLOATING_MARGIN,
+  )
 
   return {
     x: Math.max(FLOATING_MARGIN, Math.min(position.x, maxX)),
@@ -30,8 +36,14 @@ function clampPosition(position: FloatingPanelPosition): FloatingPanelPosition {
 }
 
 export function useBoundedFloatingPanel() {
-  const [position, setPosition] = useState<FloatingPanelPosition>(getDefaultPosition)
-  const dragStart = useRef<{ startX: number; startY: number; originX: number; originY: number } | null>(null)
+  const [position, setPosition] =
+    useState<FloatingPanelPosition>(getDefaultPosition)
+  const dragStart = useRef<{
+    startX: number
+    startY: number
+    originX: number
+    originY: number
+  } | null>(null)
 
   const resetPosition = useCallback(() => {
     setPosition(getDefaultPosition())
@@ -39,7 +51,7 @@ export function useBoundedFloatingPanel() {
 
   useEffect(() => {
     function handleResize() {
-      setPosition(previous => clampPosition(previous))
+      setPosition((previous) => clampPosition(previous))
     }
 
     window.addEventListener('resize', handleResize)
@@ -62,7 +74,12 @@ export function useBoundedFloatingPanel() {
 
       const dx = event.clientX - dragStart.current.startX
       const dy = event.clientY - dragStart.current.startY
-      setPosition(clampPosition({ x: dragStart.current.originX + dx, y: dragStart.current.originY + dy }))
+      setPosition(
+        clampPosition({
+          x: dragStart.current.originX + dx,
+          y: dragStart.current.originY + dy,
+        }),
+      )
     },
     onPointerUp: (event: React.PointerEvent<HTMLElement>) => {
       ;(event.target as HTMLElement).releasePointerCapture(event.pointerId)

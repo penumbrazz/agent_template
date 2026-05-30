@@ -19,7 +19,16 @@ describe('extractTableSelection', () => {
     `
     const row = document.querySelector('tbody tr') as HTMLTableRowElement
     row.getBoundingClientRect = () =>
-      ({ x: 0, y: 45, width: 300, height: 30, top: 45, left: 0, right: 300, bottom: 75 } as DOMRect)
+      ({
+        x: 0,
+        y: 45,
+        width: 300,
+        height: 30,
+        top: 45,
+        left: 0,
+        right: 300,
+        bottom: 75,
+      }) as DOMRect
 
     const result = await extractTableSelection(selection)
 

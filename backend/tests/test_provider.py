@@ -131,7 +131,9 @@ class TestProviderFetchModels:
         assert data["fetched"] == 2
 
     @patch("app.services.provider.httpx.Client")
-    def test_fetch_models_removes_stale_models(self, mock_client_cls, admin_user, client):
+    def test_fetch_models_removes_stale_models(
+        self, mock_client_cls, admin_user, client
+    ):
         create_resp = client.post(
             "/api/providers",
             headers=admin_user,
@@ -156,9 +158,7 @@ class TestProviderFetchModels:
         mock_client.__exit__ = MagicMock(return_value=False)
         mock_client_cls.return_value = mock_client
 
-        client.post(
-            f"/api/providers/{provider_id}/fetch-models", headers=admin_user
-        )
+        client.post(f"/api/providers/{provider_id}/fetch-models", headers=admin_user)
 
         # Second fetch: only returns gpt-4o (simulating provider change)
         mock_resp.json.return_value = {"data": [{"id": "gpt-4o"}]}

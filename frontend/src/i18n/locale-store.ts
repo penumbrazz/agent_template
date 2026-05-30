@@ -15,8 +15,7 @@ function normalizeLocale(value: unknown): Locale {
 
 function readStoredLocale(): Locale {
   try {
-    const stored =
-      globalThis.localStorage?.getItem(LOCALE_STORAGE_KEY) ?? null
+    const stored = globalThis.localStorage?.getItem(LOCALE_STORAGE_KEY) ?? null
     return normalizeLocale(stored)
   } catch {
     return DEFAULT_LOCALE

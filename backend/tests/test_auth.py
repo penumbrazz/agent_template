@@ -1,3 +1,7 @@
+from app.db.seed import seed_default_admin
+from app.db.session import SessionLocal
+
+
 class TestAuthRegister:
     def test_register_success(self, client):
         resp = client.post(
@@ -110,10 +114,6 @@ class TestAuthMe:
         assert resp.status_code == 401
 
 
-from app.db.seed import seed_default_admin
-from app.db.session import SessionLocal
-
-
 class TestAuthLoginCookie:
     def test_login_sets_refresh_cookie(self, client):
         client.post(
@@ -190,6 +190,7 @@ class TestAuthLogout:
 class TestSeedDefaultAdmin:
     def _make_test_db(self):
         import os
+
         from sqlalchemy import create_engine
         from sqlalchemy.orm import sessionmaker
 
@@ -199,14 +200,13 @@ class TestSeedDefaultAdmin:
             "sqlite:///./test_seed.db", connect_args={"check_same_thread": False}
         )
         Base.metadata.create_all(bind=test_engine)
-        TestSession = sessionmaker(
-            autocommit=False, autoflush=False, bind=test_engine
-        )
+        TestSession = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
         test_db = TestSession()
         return test_db, test_engine
 
     def _cleanup(self, test_db, test_engine):
         import os
+
         from app.models.base import Base
 
         test_db.close()

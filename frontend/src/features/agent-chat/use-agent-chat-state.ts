@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 
-import { useT } from '@/i18n'
+import { translate, useT } from '@/i18n'
 
 import { MOCK_AGENT_SESSIONS, MOCK_ASSISTANT_REPLY } from './mock-data'
 import type {
@@ -65,13 +65,12 @@ export function useAgentChatState() {
 
     const userMessage = createMessage(
       'user',
-      trimmed || '引用页面上下文',
+      trimmed || translate('agentChat.selectionTool'),
     )
     userMessage.attachments = payload.attachments
     const assistantMessage = createMessage('assistant', MOCK_ASSISTANT_REPLY)
 
-    const titleSource =
-      trimmed || payload.attachments[0]?.label || ''
+    const titleSource = trimmed || payload.attachments[0]?.label || ''
 
     setSessions((previous) =>
       previous.map((session) => {
@@ -87,9 +86,7 @@ export function useAgentChatState() {
 
         return {
           ...session,
-          title: !session.title
-            ? titleSource.slice(0, 16)
-            : session.title,
+          title: !session.title ? titleSource.slice(0, 16) : session.title,
           updatedLabel: t('agentChat.messageCountJustNow', {
             count: nextMessages.length,
           }),

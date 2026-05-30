@@ -1,5 +1,5 @@
 import time
-from typing import Optional
+from typing import Callable, Optional
 
 import httpx
 from sqlalchemy.orm import Session
@@ -12,6 +12,10 @@ from shared.utils.crypto import decrypt_api_key, encrypt_api_key, mask_api_key
 
 ANTHROPIC_API_VERSION = "2023-06-01"
 
+# HTTP timeout constants
+DEFAULT_HTTP_TIMEOUT = 30.0
+VALIDATE_HTTP_TIMEOUT = 15.0
+
 _http_client: Optional[httpx.Client] = None
 
 
@@ -19,7 +23,7 @@ def _get_http_client() -> httpx.Client:
     """Return the shared httpx client, creating one if needed."""
     global _http_client
     if _http_client is None or _http_client.is_closed:
-        _http_client = httpx.Client(timeout=30.0)
+        _http_client = httpx.Client(timeout=DEFAULT_HTTP_TIMEOUT)
     return _http_client
 
 
@@ -71,12 +75,15 @@ def _normalize_base_url(url: str) -> str:
     return url.rstrip("/")
 
 
-def _models_path(provider_type: str) -> str:
-    """Return the API path for listing models based on the provider type."""
-    return "/models"
+_MODELS_API_PATH = "/models"
 
 
-def _timed_request(fn) -> dict:
+def _models_path() -> str:
+    """Return the API path for listing models."""
+    return _MODELS_API_PATH
+
+
+def _timed_request(fn: Callable[[], None]) -> dict:
     """Execute a callable and return a dict with success status, latency, and error.
 
     Args:
@@ -171,7 +178,7 @@ def fetch_models(db: Session, provider: Provider) -> list[LLMModel]:
     headers = _build_headers(decrypted_key, provider.type)
 
     client = _get_http_client()
-    resp = client.get(f"{base_url}{_models_path(provider.type)}", headers=headers)
+    resp = client.get(f"{base_url}{_models_path()}", headers=headers)
     resp.raise_for_status()
 
     remote_ids = set(m["id"] for m in resp.json().get("data", []))
@@ -219,7 +226,11 @@ def test_provider(
     if not model_id:
         model = db.query(LLMModel).filter(LLMModel.provider_id == provider.id).first()
         if not model:
-            return {"success": False, "latency_ms": 0, "error": "No models available for testing"}
+            return {
+                "success": False,
+                "latency_ms": 0,
+                "error": "No models available for testing",
+            }
         model_id = model.model_id
 
     base_url = _normalize_base_url(provider.base_url)
@@ -236,9 +247,13 @@ def test_provider(
     def make_request():
         client = _get_http_client()
         if provider.type == ProviderType.OPENAI_COMPATIBLE.value:
-            resp = client.post(f"{base_url}/chat/completions", headers=headers, json=chat_payload)
+            resp = client.post(
+                f"{base_url}/chat/completions", headers=headers, json=chat_payload
+            )
         else:
-            resp = client.post(f"{base_url}/messages", headers=headers, json=chat_payload)
+            resp = client.post(
+                f"{base_url}/messages", headers=headers, json=chat_payload
+            )
         resp.raise_for_status()
 
     return _timed_request(make_request)
@@ -250,8 +265,8 @@ def validate_provider(base_url: str, api_key: str, provider_type: str) -> dict:
     headers = _build_headers(api_key, provider_type)
 
     def make_request():
-        client = httpx.Client(timeout=15.0)
-        resp = client.get(f"{url}{_models_path(provider_type)}", headers=headers)
+        client = httpx.Client(timeout=VALIDATE_HTTP_TIMEOUT)
+        resp = client.get(f"{url}{_models_path()}", headers=headers)
         resp.raise_for_status()
         client.close()
 

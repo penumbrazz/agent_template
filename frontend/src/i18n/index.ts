@@ -13,12 +13,7 @@ export {
   subscribeLocale,
   useLocale,
 } from './locale-store'
-export {
-  LOCALES,
-  isSupportedLocale,
-  messages,
-  translate,
-} from './messages'
+export { LOCALES, isSupportedLocale, messages, translate } from './messages'
 export type { Locale, TranslationKey } from './messages'
 export type {
   DeepPartialMessageTree,

@@ -16,10 +16,10 @@ export default function TelemetryInit(): null {
     if (!runtimeConfig.otelEnabled) return
 
     import('@/lib/telemetry')
-      .then(module => {
+      .then((module) => {
         return module.initFrontendTracer()
       })
-      .catch(error => {
+      .catch((error) => {
         console.error('[TelemetryInit] Failed to initialize telemetry:', error)
       })
   }, [])

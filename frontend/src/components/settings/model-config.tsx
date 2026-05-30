@@ -13,116 +13,121 @@ import { ProviderFormDialog } from './provider-form-dialog'
 import { ModelFormDialog } from './model-form-dialog'
 import { TestModelDialog } from './test-model-dialog'
 import { Plus, RefreshCw, Trash2, FlaskConical, Edit } from 'lucide-react'
-import { toast } from 'sonner'
-import { useT, translate } from '@/i18n'
+import { useT } from '@/i18n'
+import { useApiAction } from '@/hooks/use-api-action'
+import { cn } from '@/lib/utils'
 
 export function ModelConfig() {
-  const { data: providers, mutate: mutateProviders } = useSWR(
-    'providers',
-    () => providersApi.list(),
+  const { data: providers, mutate: mutateProviders } = useSWR('providers', () =>
+    providersApi.list(),
   )
-  const { data: allModels, mutate: mutateModels } = useSWR(
-    'all-models',
-    () => modelsApi.listAll(),
+  const { data: allModels, mutate: mutateModels } = useSWR('all-models', () =>
+    modelsApi.listAll(),
   )
 
-  const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null)
+  const [selectedProvider, setSelectedProvider] = useState<Provider | null>(
+    null,
+  )
   const [providerDialogOpen, setProviderDialogOpen] = useState(false)
   const [editingProvider, setEditingProvider] = useState<Provider | null>(null)
   const [modelDialogOpen, setModelDialogOpen] = useState(false)
   const [testDialogOpen, setTestDialogOpen] = useState(false)
   const t = useT()
+  const { execute } = useApiAction()
 
-  const providerModels = allModels?.filter(
-    (m) => m.provider_id === selectedProvider?.id,
-  ) ?? []
+  const providerModels =
+    allModels?.filter((m) => m.provider_id === selectedProvider?.id) ?? []
 
   const handleCreateProvider = async (data: ProviderCreate) => {
-    try {
-      await providersApi.create(data)
+    const result = await execute(() => providersApi.create(data), {
+      successMessage: 'settings.modelConfig.providerCreated',
+      errorMessage: 'settings.modelConfig.createFailed',
+    })
+    if (result !== undefined) {
       mutateProviders()
-      toast.success(translate('settings.modelConfig.providerCreated'))
-    } catch (e) {
-      const message = e instanceof Error ? e.message : translate('settings.modelConfig.createFailed')
-      toast.error(message)
-      throw e
+    } else {
+      throw new Error('Provider creation failed')
     }
   }
 
   const handleUpdateProvider = async (data: ProviderCreate) => {
     if (!editingProvider) return
-    try {
-      await providersApi.update(editingProvider.id, data)
+    const result = await execute(
+      () => providersApi.update(editingProvider.id, data),
+      {
+        successMessage: 'settings.modelConfig.providerUpdated',
+        errorMessage: 'settings.modelConfig.updateFailed',
+      },
+    )
+    if (result !== undefined) {
       mutateProviders()
       setEditingProvider(null)
-      toast.success(translate('settings.modelConfig.providerUpdated'))
-    } catch (e) {
-      const message = e instanceof Error ? e.message : translate('settings.modelConfig.updateFailed')
-      toast.error(message)
-      throw e
+    } else {
+      throw new Error('Provider update failed')
     }
   }
 
   const handleDeleteProvider = async (id: string) => {
-    try {
-      await providersApi.delete(id)
+    const result = await execute(() => providersApi.delete(id), {
+      successMessage: 'settings.modelConfig.providerDeleted',
+      errorMessage: 'settings.modelConfig.deleteFailed',
+    })
+    if (result !== undefined) {
       mutateProviders()
       mutateModels()
       if (selectedProvider?.id === id) setSelectedProvider(null)
-      toast.success(translate('settings.modelConfig.providerDeleted'))
-    } catch (e) {
-      const message = e instanceof Error ? e.message : translate('settings.modelConfig.deleteFailed')
-      toast.error(message)
     }
   }
 
   const handleFetchModels = async () => {
     if (!selectedProvider) return
-    try {
-      await providersApi.fetchModels(selectedProvider.id)
+    const result = await execute(
+      () => providersApi.fetchModels(selectedProvider.id),
+      {
+        successMessage: 'settings.modelConfig.modelsFetched',
+        errorMessage: 'settings.modelConfig.fetchModelsFailed',
+      },
+    )
+    if (result !== undefined) {
       mutateModels()
-      toast.success(translate('settings.modelConfig.modelsFetched'))
-    } catch (e) {
-      const message = e instanceof Error ? e.message : translate('settings.modelConfig.fetchModelsFailed')
-      toast.error(message)
     }
   }
 
   const handleCreateModel = async (data: ModelCreate) => {
-    try {
-      await modelsApi.create(data)
+    const result = await execute(() => modelsApi.create(data), {
+      errorMessage: 'settings.modelConfig.createModelFailed',
+    })
+    if (result !== undefined) {
       mutateModels()
-    } catch (e) {
-      const message = e instanceof Error ? e.message : translate('settings.modelConfig.createModelFailed')
-      toast.error(message)
-      throw e
+    } else {
+      throw new Error('Model creation failed')
     }
   }
 
   const handleToggleModel = async (model: LLMModel) => {
-    try {
-      await modelsApi.toggle(model.id)
+    const result = await execute(() => modelsApi.toggle(model.id), {
+      errorMessage: 'settings.modelConfig.toggleModelFailed',
+    })
+    if (result !== undefined) {
       mutateModels()
-    } catch (e) {
-      const message = e instanceof Error ? e.message : translate('settings.modelConfig.toggleModelFailed')
-      toast.error(message)
     }
   }
 
   const handleDeleteModel = async (id: string) => {
-    try {
-      await modelsApi.delete(id)
+    const result = await execute(() => modelsApi.delete(id), {
+      errorMessage: 'settings.modelConfig.deleteModelFailed',
+    })
+    if (result !== undefined) {
       mutateModels()
-    } catch (e) {
-      const message = e instanceof Error ? e.message : translate('settings.modelConfig.deleteModelFailed')
-      toast.error(message)
     }
   }
 
   return (
     <div className="space-y-6" data-testid="model-config">
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-medium">{t('settings.modelConfig.title')}</h3>
+        <h3 className="text-base font-medium">
+          {t('settings.modelConfig.title')}
+        </h3>
         <Button
           size="sm"
           onClick={() => {
@@ -147,11 +152,12 @@ export function ModelConfig() {
           <div
             key={p.id}
             onClick={() => setSelectedProvider(p)}
-            className={`flex items-center justify-between p-3 rounded-md border cursor-pointer transition-colors ${
+            className={cn(
+              'flex items-center justify-between p-3 rounded-md border cursor-pointer transition-colors',
               selectedProvider?.id === p.id
                 ? 'border-primary bg-surface'
-                : 'border-border hover:bg-surface'
-            }`}
+                : 'border-border hover:bg-surface',
+            )}
             data-testid={`provider-item-${p.id}`}
           >
             <div className="flex items-center gap-3">
@@ -178,7 +184,7 @@ export function ModelConfig() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-red-500 hover:text-red-600"
+                className="h-8 w-8 text-error hover:text-error"
                 onClick={(e) => {
                   e.stopPropagation()
                   handleDeleteProvider(p.id)
@@ -196,7 +202,9 @@ export function ModelConfig() {
         <div className="space-y-4 pt-4 border-t">
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-medium">
-              {t('settings.modelConfig.providerModels', { name: selectedProvider.name })}
+              {t('settings.modelConfig.providerModels', {
+                name: selectedProvider.name,
+              })}
             </h4>
             <div className="flex gap-2">
               <Button
@@ -262,7 +270,7 @@ export function ModelConfig() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 text-text-muted hover:text-red-500"
+                  className="h-7 w-7 text-text-muted hover:text-error"
                   onClick={() => handleDeleteModel(m.id)}
                   data-testid={`delete-model-${m.id}`}
                 >

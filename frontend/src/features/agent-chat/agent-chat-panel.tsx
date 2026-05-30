@@ -1,14 +1,6 @@
 'use client'
 
-import {
-  MessageCircle,
-  Menu,
-  Plus,
-  PanelRightOpen,
-  Minus,
-  Send,
-  MousePointer2,
-} from 'lucide-react'
+import { MessageCircle } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { cn } from '@/lib/utils'
@@ -29,7 +21,10 @@ import {
 } from './use-bounded-floating-panel'
 import { useDockedPanelWidth } from './use-docked-panel-width'
 import { useAgentChatState } from './use-agent-chat-state'
-import { AttachmentChip } from './attachment-chip'
+import { ChatTitleBar } from './chat-title-bar'
+import { ChatHistoryDrawer } from './chat-history-drawer'
+import { ChatMessageList } from './chat-message-list'
+import { ChatInputArea } from './chat-input-area'
 import type { AgentChatMode } from './types'
 
 export function AgentChatPanel() {
@@ -129,6 +124,10 @@ export function AgentChatPanel() {
     }
   }
 
+  function removeAttachment(id: string) {
+    setAttachments((previous) => previous.filter((item) => item.id !== id))
+  }
+
   if (mode === 'minimized') {
     return (
       <button
@@ -168,187 +167,42 @@ export function AgentChatPanel() {
             }
       }
     >
-      {/* Title bar */}
-      <div
-        data-testid="agent-chat-drag-handle"
-        {...(!isDocked ? dragHandleProps : {})}
-        className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-2.5"
-      >
-        <button
-          data-testid="agent-chat-menu-button"
-          onClick={toggleHistory}
-          className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-surface transition-colors"
-          type="button"
-        >
-          <Menu className="h-4 w-4" />
-        </button>
-
-        <button
-          data-testid="agent-chat-new-conversation-button"
-          onClick={startNewConversation}
-          className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-surface transition-colors"
-          type="button"
-        >
-          <Plus className="h-4 w-4" />
-        </button>
-
-        <span className="flex-1 truncate text-center text-sm font-medium">
-          {currentSession.title || t('agentChat.newConversation')}
-        </span>
-
-        {isDocked ? (
-          <button
-            data-testid="agent-chat-restore-button"
-            onClick={handleRestoreFloating}
-            className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-surface transition-colors"
-            type="button"
-          >
-            <PanelRightOpen className="h-4 w-4" />
-          </button>
-        ) : (
-          <button
-            data-testid="agent-chat-dock-button"
-            onClick={handleDock}
-            className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-surface transition-colors"
-            type="button"
-          >
-            <PanelRightOpen className="h-4 w-4" />
-          </button>
-        )}
-
-        <button
-          data-testid="agent-chat-minimize-button"
-          onClick={handleMinimize}
-          className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-surface transition-colors"
-          type="button"
-        >
-          <Minus className="h-4 w-4" />
-        </button>
-      </div>
+      <ChatTitleBar
+        sessionTitle={currentSession.title}
+        isDocked={isDocked}
+        dragHandleProps={dragHandleProps}
+        onToggleHistory={toggleHistory}
+        onNewConversation={startNewConversation}
+        onDock={handleDock}
+        onRestoreFloating={handleRestoreFloating}
+        onMinimize={handleMinimize}
+      />
 
       {/* Body area with optional history drawer */}
       <div className="relative flex-1 overflow-hidden">
-        {/* History drawer overlay */}
-        <div
-          data-testid="agent-chat-history-overlay"
-          onClick={closeHistory}
-          className={cn(
-            'absolute inset-0 z-10 bg-black/20 transition-opacity duration-300',
-            isHistoryOpen ? 'opacity-100' : 'pointer-events-none opacity-0',
-          )}
+        <ChatHistoryDrawer
+          sessions={sessions}
+          currentSessionId={currentSessionId}
+          isHistoryOpen={isHistoryOpen}
+          onSelectSession={selectSession}
+          onCloseHistory={closeHistory}
         />
-
-        {/* History drawer - session list only */}
-        <div
-          data-testid="agent-chat-history-drawer"
-          className={cn(
-            'absolute inset-y-0 left-0 z-20 w-64 border-r border-border bg-base shadow-[0_1px_3px_rgba(20,20,19,0.08)] transition-transform duration-300',
-            isHistoryOpen ? 'translate-x-0' : '-translate-x-full',
-          )}
-        >
-          <div className="overflow-y-auto p-2">
-            {sessions.map((session) => (
-              <button
-                key={session.id}
-                data-testid={`agent-chat-session-item-${session.id}`}
-                onClick={() => selectSession(session.id)}
-                className={cn(
-                  'w-full rounded-md px-3 py-2 text-left text-sm transition-colors',
-                  session.id === currentSessionId
-                    ? 'bg-surface font-medium'
-                    : 'hover:bg-surface',
-                )}
-                type="button"
-              >
-                <div className="truncate">
-                  {session.title || t('agentChat.newConversation')}
-                </div>
-                <div className="text-xs text-text-muted">
-                  {session.updatedLabel}
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
 
         {/* Chat content */}
         <div className="flex h-full flex-col">
           <div className="flex-1 overflow-y-auto p-4">
-            {currentSession.messages.length === 0 ? (
-              <div className="flex h-full items-center justify-center">
-                <p className="text-sm text-text-muted">
-                  {t('agentChat.startConversation')}
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {currentSession.messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={cn(
-                      'max-w-[85%] rounded-md px-3 py-2 text-sm',
-                      message.role === 'user'
-                        ? 'ml-auto bg-primary text-white'
-                        : 'bg-surface text-text-primary',
-                    )}
-                  >
-                    {message.content}
-                  </div>
-                ))}
-              </div>
-            )}
+            <ChatMessageList messages={currentSession.messages} />
           </div>
 
-          {/* Input area */}
-          <div className="shrink-0 border-t border-border p-3">
-            {attachments.length > 0 && (
-              <div
-                data-testid="agent-chat-attachment-list"
-                className="mb-2 flex flex-wrap gap-2"
-              >
-                {attachments.map((attachment) => (
-                  <AttachmentChip
-                    key={attachment.id}
-                    attachment={attachment}
-                    onRemove={(id) =>
-                      setAttachments((previous) =>
-                        previous.filter((item) => item.id !== id),
-                      )
-                    }
-                  />
-                ))}
-              </div>
-            )}
-            <div className="flex items-end gap-2">
-              <button
-                data-testid="selection-tool-button"
-                onClick={startSelection}
-                className="flex h-11 min-w-[44px] shrink-0 items-center justify-center rounded-md border border-border bg-surface text-text-primary hover:bg-base transition-colors"
-                type="button"
-                aria-label={t('agentChat.selectionTool')}
-              >
-                <MousePointer2 className="h-4 w-4" />
-              </button>
-              <textarea
-                data-testid="agent-chat-input"
-                value={draft}
-                onChange={(event) => setDraft(event.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={t('agentChat.inputPlaceholder')}
-                rows={1}
-                className="flex-1 resize-none rounded-md border border-border bg-base px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-              <button
-                data-testid="agent-chat-send-button"
-                onClick={handleSend}
-                disabled={!draft.trim() && attachments.length === 0}
-                className="flex h-11 min-w-[44px] shrink-0 items-center justify-center rounded-md bg-primary text-white hover:bg-primary-active disabled:opacity-40 disabled:hover:bg-primary transition-colors"
-                type="button"
-              >
-                <Send className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
+          <ChatInputArea
+            draft={draft}
+            attachments={attachments}
+            onDraftChange={setDraft}
+            onKeyDown={handleKeyDown}
+            onSend={handleSend}
+            onStartSelection={startSelection}
+            onRemoveAttachment={removeAttachment}
+          />
         </div>
       </div>
 

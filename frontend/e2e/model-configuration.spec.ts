@@ -40,10 +40,14 @@ test.describe('Model Configuration', () => {
   test.afterEach(async () => {
     // Clean up models then provider
     for (const id of createdModelIds) {
-      await apiDelete(`/api/models/${id}`).catch(() => {})
+      await apiDelete(`/api/models/${id}`).catch((err) =>
+        console.warn('Cleanup failed:', err.message),
+      )
     }
     if (createdProviderId) {
-      await apiDelete(`/api/providers/${createdProviderId}`).catch(() => {})
+      await apiDelete(`/api/providers/${createdProviderId}`).catch((err) =>
+        console.warn('Cleanup failed:', err.message),
+      )
     }
     createdProviderId = undefined
     createdModelIds = []
@@ -111,7 +115,7 @@ test.describe('Model Configuration', () => {
 
     // A toast error should appear
     await expect(
-      page.locator('[data-sonner-toast][data-type="error"]').first()
+      page.locator('[data-sonner-toast][data-type="error"]').first(),
     ).toBeVisible({ timeout: 10000 })
 
     // Save should still be disabled after failed test
@@ -201,7 +205,7 @@ test.describe('Model Configuration', () => {
 
     // Fill model form
     await page.getByTestId('model-id-input').fill('e2e-test-model')
-    await page.getByTestId('model-display-name-input').fill('E2E Test Model')
+    await page.getByTestId('display-name-input').fill('E2E Test Model')
 
     // Submit
     await page.getByTestId('model-submit').click()
@@ -251,10 +255,12 @@ test.describe('Model Configuration', () => {
     await toggleBtn.click()
 
     // Wait for SWR to update and verify via API
-    await expect.poll(async () => {
-      const models = await apiGet('/api/models/all')
-      return models.find((m: { id: string }) => m.id === model.id)
-    }).toHaveProperty('is_enabled', true)
+    await expect
+      .poll(async () => {
+        const models = await apiGet('/api/models/all')
+        return models.find((m: { id: string }) => m.id === model.id)
+      })
+      .toHaveProperty('is_enabled', true)
     const models = await apiGet('/api/models/all')
     const updated = models.find((m: { id: string }) => m.id === model.id)
     expect(updated.is_enabled).toBe(true)
@@ -333,10 +339,12 @@ test.describe('Model Configuration', () => {
     await deleteBtn.click()
 
     // Wait for update
-    await expect.poll(async () => {
-      const models = await apiGet('/api/models/all')
-      return models.find((m: { id: string }) => m.id === model.id)
-    }).toBeUndefined()
+    await expect
+      .poll(async () => {
+        const models = await apiGet('/api/models/all')
+        return models.find((m: { id: string }) => m.id === model.id)
+      })
+      .toBeUndefined()
 
     // Verify model deleted via API
     const models = await apiGet('/api/models/all')
@@ -367,17 +375,23 @@ test.describe('Model Configuration', () => {
     await deleteBtn.click()
 
     // Wait for update
-    await expect.poll(async () => {
-      const providers = await apiGet('/api/providers')
-      return providers.find((p: { id: string }) => p.id === provider.id)
-    }).toBeUndefined()
+    await expect
+      .poll(async () => {
+        const providers = await apiGet('/api/providers')
+        return providers.find((p: { id: string }) => p.id === provider.id)
+      })
+      .toBeUndefined()
 
     // Verify both provider and model are gone
     const providers = await apiGet('/api/providers')
-    expect(providers.find((p: { id: string }) => p.id === provider.id)).toBeUndefined()
+    expect(
+      providers.find((p: { id: string }) => p.id === provider.id),
+    ).toBeUndefined()
 
     const models = await apiGet('/api/models/all')
-    expect(models.find((m: { id: string }) => m.id === model.id)).toBeUndefined()
+    expect(
+      models.find((m: { id: string }) => m.id === model.id),
+    ).toBeUndefined()
 
     // Don't cleanup — already deleted
     createdProviderId = undefined
@@ -402,7 +416,9 @@ test.describe('Model Configuration', () => {
     createdModelIds.push(model.id)
 
     // Enable the model
-    await fetch(`${API_BASE}/api/models/${model.id}/toggle`, { method: 'PATCH' })
+    await fetch(`${API_BASE}/api/models/${model.id}/toggle`, {
+      method: 'PATCH',
+    })
 
     await page.goto('/', { waitUntil: 'networkidle' })
     await page.getByTestId('settings-trigger').click()
@@ -425,10 +441,14 @@ test.describe('Model Configuration', () => {
     await option.click()
 
     // Wait for update
-    await expect.poll(async () => {
-      const settings = await apiGet('/api/settings')
-      return settings.find((s: { key: string }) => s.key === 'default_model_id')
-    }).toHaveProperty('value', model.id)
+    await expect
+      .poll(async () => {
+        const settings = await apiGet('/api/settings')
+        return settings.find(
+          (s: { key: string }) => s.key === 'default_model_id',
+        )
+      })
+      .toHaveProperty('value', model.id)
 
     // Verify setting was saved
     const settings = await apiGet('/api/settings')

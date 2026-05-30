@@ -17,6 +17,7 @@ This module provides auto-instrumentation for:
 import logging
 from typing import Any, Optional
 
+from shared.telemetry.config import DEFAULT_MAX_BODY_SIZE
 from shared.telemetry.context.large_data import log_json_body
 
 
@@ -53,6 +54,93 @@ def setup_opentelemetry_instrumentation(
     _setup_system_metrics_instrumentation(logger)
 
 
+def _build_fastapi_hooks(capture_settings: dict, logger: logging.Logger) -> dict:
+    """Build request/response hooks for FastAPI instrumentation.
+
+    Args:
+        capture_settings: HTTP capture configuration dict.
+        logger: Logger instance.
+
+    Returns:
+        Dict with server_request_hook, client_request_hook, client_response_hook.
+    """
+    server_request_hook = None
+    client_request_hook = None
+    client_response_hook = None
+
+    if capture_settings.get("capture_request_headers") or capture_settings.get(
+        "capture_request_body"
+    ):
+        server_request_hook = _create_server_request_hook(capture_settings, logger)
+
+    if capture_settings.get("capture_response_headers") or capture_settings.get(
+        "capture_response_body"
+    ):
+        client_response_hook = _create_client_response_hook(capture_settings, logger)
+
+    return {
+        "server_request_hook": server_request_hook,
+        "client_request_hook": client_request_hook,
+        "client_response_hook": client_response_hook,
+    }
+
+
+def _apply_fastapi_instrumentation(
+    app: Any,
+    instrument_kwargs: dict,
+    disable_send_receive: bool,
+    logger: logging.Logger,
+) -> None:
+    """Apply FastAPI instrumentation with fallback for unsupported options.
+
+    Args:
+        app: FastAPI application instance.
+        instrument_kwargs: Keyword arguments for instrument_app.
+        disable_send_receive: Whether send/receive span exclusion was requested.
+        logger: Logger instance.
+    """
+    from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+
+    try:
+        FastAPIInstrumentor.instrument_app(app, **instrument_kwargs)
+        logger.info("✓ FastAPI instrumentation enabled")
+    except TypeError as e:
+        # If exclude_spans is not supported, retry without it
+        if "exclude_spans" in str(e) and disable_send_receive:
+            logger.warning(
+                "  exclude_spans not supported in this version. "
+                "Upgrade opentelemetry-instrumentation-fastapi to disable "
+                "internal http.send/http.receive spans for streaming endpoints."
+            )
+            del instrument_kwargs["exclude_spans"]
+            FastAPIInstrumentor.instrument_app(app, **instrument_kwargs)
+            logger.info(
+                "✓ FastAPI instrumentation enabled (without streaming optimization)"
+            )
+        else:
+            raise
+
+
+def _log_fastapi_instrumentation_config(
+    capture_settings: dict, otel_config: Any, logger: logging.Logger
+) -> None:
+    """Log the FastAPI instrumentation configuration.
+
+    Args:
+        capture_settings: HTTP capture configuration dict.
+        otel_config: OTEL configuration object.
+        logger: Logger instance.
+    """
+    if any(capture_settings.values()):
+        enabled_captures = [k for k, v in capture_settings.items() if v]
+        logger.info(f"  HTTP capture enabled for: {', '.join(enabled_captures)}")
+
+    if otel_config.included_urls:
+        logger.info(f"  URL whitelist mode: {otel_config.included_urls}")
+    elif otel_config.excluded_urls:
+        logger.info(f"  URL blacklist: {otel_config.excluded_urls}")
+
+
 def _setup_fastapi_instrumentation(app: Any, logger: logging.Logger) -> None:
     """Setup FastAPI instrumentation for tracing HTTP requests.
 
@@ -75,8 +163,6 @@ def _setup_fastapi_instrumentation(app: Any, logger: logging.Logger) -> None:
     - Semantic Conventions: https://opentelemetry.io/docs/specs/semconv/http/
     """
     try:
-        from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-
         from shared.telemetry.config import (
             get_excluded_urls_regex,
             get_http_capture_settings,
@@ -91,28 +177,7 @@ def _setup_fastapi_instrumentation(app: Any, logger: logging.Logger) -> None:
         excluded_urls_regex = get_excluded_urls_regex()
 
         # Build hooks for capturing request/response data
-        server_request_hook = None
-        client_request_hook = None
-        client_response_hook = None
-
-        if capture_settings.get("capture_request_headers") or capture_settings.get(
-            "capture_request_body"
-        ):
-            server_request_hook = _create_server_request_hook(capture_settings, logger)
-
-        if capture_settings.get("capture_response_headers") or capture_settings.get(
-            "capture_response_body"
-        ):
-            client_response_hook = _create_client_response_hook(
-                capture_settings, logger
-            )
-
-        # Configure FastAPI instrumentation with URL filtering
-        instrument_kwargs = {
-            "server_request_hook": server_request_hook,
-            "client_request_hook": client_request_hook,
-            "client_response_hook": client_response_hook,
-        }
+        instrument_kwargs = _build_fastapi_hooks(capture_settings, logger)
 
         # Add excluded_urls if configured (blacklist mode)
         if excluded_urls_regex and not otel_config.included_urls:
@@ -124,50 +189,16 @@ def _setup_fastapi_instrumentation(app: Any, logger: logging.Logger) -> None:
         # Disable internal http.send/http.receive spans if configured
         # This is the industry standard approach to reduce noise from SSE/streaming endpoints
         # where each chunk would otherwise create a separate span
-        #
-        # The `exclude_spans` parameter is supported in opentelemetry-instrumentation-fastapi
-        # It accepts a string to specify which spans to exclude: "send", "receive", or "send,receive"
-        #
-        # This parameter prevents the creation of internal spans with:
-        # - asgi.event.type = http.response.body
-        # - span.kind = internal
         if otel_config.disable_send_receive_spans:
-            # Exclude both send and receive spans to reduce noise from streaming endpoints
             instrument_kwargs["exclude_spans"] = "send,receive"
             logger.info(
                 "  Internal http.send/http.receive spans disabled (streaming-friendly mode)"
             )
 
-        # Apply instrumentation
-        try:
-            FastAPIInstrumentor.instrument_app(app, **instrument_kwargs)
-            logger.info("✓ FastAPI instrumentation enabled")
-        except TypeError as e:
-            # If exclude_spans is not supported, retry without it
-            if "exclude_spans" in str(e) and otel_config.disable_send_receive_spans:
-                logger.warning(
-                    "  exclude_spans not supported in this version. "
-                    "Upgrade opentelemetry-instrumentation-fastapi to disable "
-                    "internal http.send/http.receive spans for streaming endpoints."
-                )
-                del instrument_kwargs["exclude_spans"]
-                FastAPIInstrumentor.instrument_app(app, **instrument_kwargs)
-                logger.info(
-                    "✓ FastAPI instrumentation enabled (without streaming optimization)"
-                )
-            else:
-                raise
-
-        # Log capture settings
-        if any(capture_settings.values()):
-            enabled_captures = [k for k, v in capture_settings.items() if v]
-            logger.info(f"  HTTP capture enabled for: {', '.join(enabled_captures)}")
-
-        # Log URL filtering configuration
-        if otel_config.included_urls:
-            logger.info(f"  URL whitelist mode: {otel_config.included_urls}")
-        elif otel_config.excluded_urls:
-            logger.info(f"  URL blacklist: {otel_config.excluded_urls}")
+        _apply_fastapi_instrumentation(
+            app, instrument_kwargs, otel_config.disable_send_receive_spans, logger
+        )
+        _log_fastapi_instrumentation_config(capture_settings, otel_config, logger)
 
     except ImportError:
         logger.debug("FastAPI instrumentation not available (package not installed)")
@@ -280,7 +311,7 @@ def _create_client_response_hook(capture_settings: dict, logger: logging.Logger)
                 body = message.get("body", b"")
                 if body:
                     # Limit body size to avoid huge spans
-                    max_body_size = 4096  # 4KB limit
+                    max_body_size = DEFAULT_MAX_BODY_SIZE
                     if isinstance(body, bytes):
                         body_str = body[:max_body_size].decode(
                             "utf-8", errors="replace"
@@ -531,6 +562,97 @@ def _create_httpx_response_hook(capture_settings: dict, logger: logging.Logger):
     return response_hook
 
 
+def _extract_httpx_request_body(
+    request: Any, logger: logging.Logger
+) -> Optional[bytes]:
+    """Try multiple methods to extract the body from an HTTPX request object.
+
+    Args:
+        request: The HTTPX request object.
+        logger: Logger instance for debug output.
+
+    Returns:
+        The request body as bytes, or None if extraction failed.
+    """
+    body = None
+
+    # Method 1: request.content (bytes) - most common
+    if hasattr(request, "content"):
+        content = request.content
+        content_preview = content[:100] if content else b"empty"
+        logger.debug(
+            f"[OTEL DEBUG] request.content type: {type(content)}, "
+            f"len: {len(content) if content else 0}, preview: {content_preview}"
+        )
+        if content:
+            body = content
+
+    # Method 2: request.stream (for streaming requests)
+    if body is None and hasattr(request, "stream"):
+        stream = request.stream
+        stream_attrs = [attr for attr in dir(stream) if not attr.startswith("__")]
+        logger.debug(
+            f"[OTEL DEBUG] request.stream type: {type(stream).__name__}, "
+            f"attrs: {stream_attrs[:10]}"
+        )
+
+        # Try _stream first (ByteStream uses this)
+        if hasattr(stream, "_stream"):
+            inner_stream = stream._stream
+            logger.debug(f"[OTEL DEBUG] Found stream._stream: {type(inner_stream)}")
+            if isinstance(inner_stream, bytes):
+                body = inner_stream
+                logger.debug(f"[OTEL DEBUG] _stream is bytes, len: {len(body)}")
+            elif hasattr(inner_stream, "read"):
+                # It's a file-like object (BytesIO), try to read and reset
+                try:
+                    current_pos = (
+                        inner_stream.tell() if hasattr(inner_stream, "tell") else 0
+                    )
+                    body = inner_stream.read()
+                    if hasattr(inner_stream, "seek"):
+                        inner_stream.seek(current_pos)
+                    logger.debug(
+                        f"[OTEL DEBUG] Read from _stream: {type(body)}, "
+                        f"len: {len(body) if body else 0}"
+                    )
+                except Exception as read_err:
+                    logger.debug(f"[OTEL DEBUG] _stream read failed: {read_err}")
+        # Fallback to _content
+        elif hasattr(stream, "_content") and stream._content:
+            body = stream._content
+            logger.debug(
+                f"[OTEL DEBUG] Found stream._content: {type(body)}, "
+                f"len: {len(body) if body else 0}"
+            )
+        elif hasattr(stream, "body") and stream.body:
+            body = stream.body
+            logger.debug(f"[OTEL DEBUG] Found stream.body: {type(body)}")
+        elif hasattr(stream, "_body") and stream._body:
+            body = stream._body
+            logger.debug(f"[OTEL DEBUG] Found stream._body: {type(body)}")
+
+    # Method 3: Check if request has _content attribute
+    if body is None and hasattr(request, "_content"):
+        body = request._content
+        logger.debug(f"[OTEL DEBUG] Found request._content: {type(body)}")
+
+    # Method 4: Try to read from stream if it's a ByteStream
+    if body is None and hasattr(request, "stream"):
+        stream = request.stream
+        stream_type = type(stream).__name__
+        logger.debug(f"[OTEL DEBUG] Stream type name: {stream_type}")
+
+        # For ByteStream, try to get the underlying bytes
+        if hasattr(stream, "__iter__"):
+            # Don't consume the iterator, just log that it exists
+            logger.info(
+                "[OTEL DEBUG] Stream is iterable, cannot capture without consuming"
+            )
+
+    return body
+
+
 def _create_httpx_async_request_hook(capture_settings: dict, logger: logging.Logger):
     """Create an async request hook for HTTPX client to capture request headers and body."""
 
@@ -553,9 +675,6 @@ def _create_httpx_async_request_hook(capture_settings: dict, logger: logging.Log
             # Capture request body
             if capture_settings.get("capture_request_body"):
                 try:
-                    body = None
-                    max_body_size = capture_settings.get("max_body_size", 4096)
-
                     # Debug: Log request object attributes (use INFO level for visibility)
                     request_attrs = [
                         attr for attr in dir(request) if not attr.startswith("_")
@@ -564,98 +683,13 @@ def _create_httpx_async_request_hook(capture_settings: dict, logger: logging.Log
                         f"[OTEL DEBUG] HTTPX request type: {type(request).__name__}, attrs: {request_attrs[:10]}..."
                     )
 
-                    # Try different ways to get the request body
-                    # Method 1: request.content (bytes) - most common
-                    if hasattr(request, "content"):
-                        content = request.content
-                        content_preview = content[:100] if content else b"empty"
-                        logger.debug(
-                            f"[OTEL DEBUG] request.content type: {type(content)}, len: {len(content) if content else 0}, preview: {content_preview}"
-                        )
-                        if content:
-                            body = content
-
-                    # Method 2: request.stream (for streaming requests)
-                    if body is None and hasattr(request, "stream"):
-                        stream = request.stream
-                        stream_attrs = [
-                            attr for attr in dir(stream) if not attr.startswith("__")
-                        ]
-                        logger.debug(
-                            f"[OTEL DEBUG] request.stream type: {type(stream).__name__}, attrs: {stream_attrs[:10]}"
-                        )
-
-                        # Try _stream first (ByteStream uses this)
-                        if hasattr(stream, "_stream"):
-                            inner_stream = stream._stream
-                            logger.debug(
-                                f"[OTEL DEBUG] Found stream._stream: {type(inner_stream)}"
-                            )
-                            if isinstance(inner_stream, bytes):
-                                body = inner_stream
-                                logger.debug(
-                                    f"[OTEL DEBUG] _stream is bytes, len: {len(body)}"
-                                )
-                            elif hasattr(inner_stream, "read"):
-                                # It's a file-like object (BytesIO), try to read and reset
-                                try:
-                                    current_pos = (
-                                        inner_stream.tell()
-                                        if hasattr(inner_stream, "tell")
-                                        else 0
-                                    )
-                                    body = inner_stream.read()
-                                    if hasattr(inner_stream, "seek"):
-                                        inner_stream.seek(current_pos)
-                                    logger.debug(
-                                        f"[OTEL DEBUG] Read from _stream: {type(body)}, len: {len(body) if body else 0}"
-                                    )
-                                except Exception as read_err:
-                                    logger.debug(
-                                        f"[OTEL DEBUG] _stream read failed: {read_err}"
-                                    )
-                        # Fallback to _content
-                        elif hasattr(stream, "_content") and stream._content:
-                            body = stream._content
-                            logger.debug(
-                                f"[OTEL DEBUG] Found stream._content: {type(body)}, len: {len(body) if body else 0}"
-                            )
-                        elif hasattr(stream, "body") and stream.body:
-                            body = stream.body
-                            logger.debug(
-                                f"[OTEL DEBUG] Found stream.body: {type(body)}"
-                            )
-                        elif hasattr(stream, "_body") and stream._body:
-                            body = stream._body
-                            logger.debug(
-                                f"[OTEL DEBUG] Found stream._body: {type(body)}"
-                            )
-
-                    # Method 3: Check if request has _content attribute
-                    if body is None and hasattr(request, "_content"):
-                        body = request._content
-                        logger.debug(
-                            f"[OTEL DEBUG] Found request._content: {type(body)}"
-                        )
-
-                    # Method 4: Try to read from stream if it's a ByteStream
-                    if body is None and hasattr(request, "stream"):
-                        stream = request.stream
-                        # Check if it's an IteratorByteStream or similar
-                        stream_type = type(stream).__name__
-                        logger.debug(f"[OTEL DEBUG] Stream type name: {stream_type}")
-
-                        # For ByteStream, try to get the underlying bytes
-                        if hasattr(stream, "__iter__"):
-                            # Don't consume the iterator, just log that it exists
-                            logger.info(
-                                "[OTEL DEBUG] Stream is iterable, cannot capture without consuming"
-                            )
+                    body = _extract_httpx_request_body(request, logger)
 
                     if body:
                         log_json_body("http.request.body", body)
                         logger.debug(
-                            f"[OTEL DEBUG] Captured request body: {len(body) if isinstance(body, (bytes, str)) else 'unknown'} bytes/chars"
+                            f"[OTEL DEBUG] Captured request body: "
+                            f"{len(body) if isinstance(body, (bytes, str)) else 'unknown'} bytes/chars"
                         )
                     else:
                         logger.info("[OTEL DEBUG] No request body found to capture")

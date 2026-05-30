@@ -44,10 +44,7 @@ export function useSelectionOverlay(
 
   function handlePointerMove(event: React.PointerEvent) {
     if (path.length === 0) return
-    setPath((previous) => [
-      ...previous,
-      { x: event.clientX, y: event.clientY },
-    ])
+    setPath((previous) => [...previous, { x: event.clientX, y: event.clientY }])
   }
 
   function handlePointerUp() {

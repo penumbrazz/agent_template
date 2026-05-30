@@ -2,6 +2,8 @@
 
 import { BarChart3, FileText, ImageIcon, Table2, X } from 'lucide-react'
 
+import { useT } from '@/i18n'
+
 import type { ChatAttachment } from '@/features/selection-context/types'
 
 interface AttachmentChipProps {
@@ -11,17 +13,19 @@ interface AttachmentChipProps {
 
 const iconClass = 'h-3.5 w-3.5 shrink-0 text-primary'
 
-function AttachmentIcon({ kind }: { kind: ChatAttachment['artifact']['kind'] }) {
+function AttachmentIcon({
+  kind,
+}: {
+  kind: ChatAttachment['artifact']['kind']
+}) {
   if (kind === 'chart') return <BarChart3 className={iconClass} />
   if (kind === 'table') return <Table2 className={iconClass} />
   if (kind === 'screenshot') return <ImageIcon className={iconClass} />
   return <FileText className={iconClass} />
 }
 
-export function AttachmentChip({
-  attachment,
-  onRemove,
-}: AttachmentChipProps) {
+export function AttachmentChip({ attachment, onRemove }: AttachmentChipProps) {
+  const t = useT()
   return (
     <div
       data-testid="agent-chat-attachment-chip"
@@ -34,7 +38,7 @@ export function AttachmentChip({
         type="button"
         className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full hover:bg-base"
         onClick={() => onRemove(attachment.id)}
-        aria-label="删除引用"
+        aria-label={t('common.delete')}
       >
         <X className="h-3 w-3" />
       </button>

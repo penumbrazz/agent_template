@@ -17,15 +17,19 @@ export function useTraceAction() {
       const contextAttrs = buildContextAttributes()
       traceLocalActionSync(name, { ...contextAttrs, ...attributes }, () => {})
     },
-    [buildContextAttributes]
+    [buildContextAttributes],
   )
 
   const traceAction = useCallback(
-    async <T>(name: string, attributes: Attributes, fn: () => T | Promise<T>): Promise<T> => {
+    async <T>(
+      name: string,
+      attributes: Attributes,
+      fn: () => T | Promise<T>,
+    ): Promise<T> => {
       const contextAttrs = buildContextAttributes()
       return traceLocalAction(name, { ...contextAttrs, ...attributes }, fn)
     },
-    [buildContextAttributes]
+    [buildContextAttributes],
   )
 
   const traceActionSync = useCallback(
@@ -33,7 +37,7 @@ export function useTraceAction() {
       const contextAttrs = buildContextAttributes()
       return traceLocalActionSync(name, { ...contextAttrs, ...attributes }, fn)
     },
-    [buildContextAttributes]
+    [buildContextAttributes],
   )
 
   const trace = useMemo(
@@ -42,7 +46,7 @@ export function useTraceAction() {
       action: traceAction,
       actionSync: traceActionSync,
     }),
-    [traceEvent, traceAction, traceActionSync]
+    [traceEvent, traceAction, traceActionSync],
   )
 
   return {

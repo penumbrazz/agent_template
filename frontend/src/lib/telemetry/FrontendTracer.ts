@@ -29,7 +29,10 @@ import {
 import { WebTracerProvider } from '@opentelemetry/sdk-trace-web'
 import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base'
 import { registerInstrumentations } from '@opentelemetry/instrumentation'
-import { resourceFromAttributes, detectResources } from '@opentelemetry/resources'
+import {
+  resourceFromAttributes,
+  detectResources,
+} from '@opentelemetry/resources'
 import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions'
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http'
 import { browserDetector } from '@opentelemetry/opentelemetry-browser-detector'
@@ -118,7 +121,9 @@ const getDefaultConfig = (): Required<FrontendTracerConfig> => {
  * }
  * ```
  */
-export async function initFrontendTracer(config: FrontendTracerConfig = {}): Promise<void> {
+export async function initFrontendTracer(
+  config: FrontendTracerConfig = {},
+): Promise<void> {
   // Prevent double initialization
   if (isInitialized) {
     console.warn('[FrontendTracer] Already initialized, skipping')
@@ -170,7 +175,10 @@ export async function initFrontendTracer(config: FrontendTracerConfig = {}): Pro
     provider.register({
       contextManager: new ZoneContextManager(),
       propagator: new CompositePropagator({
-        propagators: [new W3CBaggagePropagator(), new W3CTraceContextPropagator()],
+        propagators: [
+          new W3CBaggagePropagator(),
+          new W3CTraceContextPropagator(),
+        ],
       }),
     })
 
@@ -186,7 +194,8 @@ export async function initFrontendTracer(config: FrontendTracerConfig = {}): Pro
     if (finalConfig.traceFetch) {
       instrumentations.push(
         new FetchInstrumentation({
-          propagateTraceHeaderCorsUrls: finalConfig.propagateTraceHeaderCorsUrls,
+          propagateTraceHeaderCorsUrls:
+            finalConfig.propagateTraceHeaderCorsUrls,
           clearTimingResources: true,
           // Ignore internal Next.js URLs and other blacklisted patterns
           ignoreUrls: finalConfig.ignoreUrls,
@@ -196,7 +205,7 @@ export async function initFrontendTracer(config: FrontendTracerConfig = {}): Pro
               span.setAttribute('http.request.method', request.method)
             }
           },
-        })
+        }),
       )
     }
 
@@ -213,7 +222,7 @@ export async function initFrontendTracer(config: FrontendTracerConfig = {}): Pro
 
     isInitialized = true
     console.info(
-      `[FrontendTracer] Initialized successfully for service '${finalConfig.serviceName}'`
+      `[FrontendTracer] Initialized successfully for service '${finalConfig.serviceName}'`,
     )
   } catch (error) {
     console.error('[FrontendTracer] Failed to initialize:', error)
@@ -265,7 +274,7 @@ export function getTracer() {
 export async function traceLocalAction<T>(
   name: string,
   attributes: Attributes,
-  fn: () => T | Promise<T>
+  fn: () => T | Promise<T>,
 ): Promise<T> {
   // If telemetry is not enabled or not initialized, just run the function
   if (!isInitialized) {
@@ -289,7 +298,9 @@ export async function traceLocalAction<T>(
       code: SpanStatusCode.ERROR,
       message: error instanceof Error ? error.message : String(error),
     })
-    span.recordException(error instanceof Error ? error : new Error(String(error)))
+    span.recordException(
+      error instanceof Error ? error : new Error(String(error)),
+    )
     throw error
   } finally {
     span.end()
@@ -315,7 +326,11 @@ export async function traceLocalAction<T>(
  * }
  * ```
  */
-export function traceLocalActionSync<T>(name: string, attributes: Attributes, fn: () => T): T {
+export function traceLocalActionSync<T>(
+  name: string,
+  attributes: Attributes,
+  fn: () => T,
+): T {
   // If telemetry is not enabled or not initialized, just run the function
   if (!isInitialized) {
     return fn()
@@ -338,7 +353,9 @@ export function traceLocalActionSync<T>(name: string, attributes: Attributes, fn
       code: SpanStatusCode.ERROR,
       message: error instanceof Error ? error.message : String(error),
     })
-    span.recordException(error instanceof Error ? error : new Error(String(error)))
+    span.recordException(
+      error instanceof Error ? error : new Error(String(error)),
+    )
     throw error
   } finally {
     span.end()
@@ -368,7 +385,10 @@ export function traceLocalActionSync<T>(name: string, attributes: Attributes, fn
  * }
  * ```
  */
-export function createSpan(name: string, attributes?: Attributes): Span | undefined {
+export function createSpan(
+  name: string,
+  attributes?: Attributes,
+): Span | undefined {
   if (!isInitialized) {
     return undefined
   }

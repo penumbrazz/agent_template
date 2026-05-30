@@ -46,7 +46,10 @@ export function ModelFormDialog({
       setModelId('')
       setDisplayName('')
     } catch (e) {
-      const message = e instanceof Error ? e.message : translate('settings.modelConfig.addModelFailed')
+      const message =
+        e instanceof Error
+          ? e.message
+          : translate('settings.modelConfig.addModelFailed')
       toast.error(message)
     } finally {
       setLoading(false)
@@ -71,7 +74,9 @@ export function ModelFormDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="display-name">{t('settings.modelConfig.displayName')}</Label>
+            <Label htmlFor="display-name">
+              {t('settings.modelConfig.displayName')}
+            </Label>
             <Input
               id="display-name"
               data-testid="display-name-input"
@@ -94,7 +99,9 @@ export function ModelFormDialog({
             disabled={loading || !modelId}
             data-testid="model-submit"
           >
-            {loading ? t('settings.modelConfig.addingModel') : t('settings.modelConfig.addModel')}
+            {loading
+              ? t('settings.modelConfig.addingModel')
+              : t('settings.modelConfig.addModel')}
           </Button>
         </DialogFooter>
       </DialogContent>

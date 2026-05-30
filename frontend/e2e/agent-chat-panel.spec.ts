@@ -1,20 +1,33 @@
 import { expect, test } from '@playwright/test'
 
-const MOCK_USER = { id: 'mock-user', username: 'mockuser', email: 'mock@test.com' }
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
-async function mockAuth(page: import('@playwright/test').Page) {
-  await page.route('**/api/auth/refresh', route =>
-    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ access_token: 'mock-token' }) }),
-  )
-  await page.route('**/api/auth/me', route =>
-    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(MOCK_USER) }),
-  )
+async function registerAndLogin(page: import('@playwright/test').Page) {
+  const registerRes = await fetch(`${API_BASE}/api/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      username: 'chatuser',
+      email: 'chat@test.com',
+      password: 'chatpass123',
+    }),
+  })
+  if (!registerRes.ok && registerRes.status !== 409) {
+    throw new Error(
+      `Registration failed: ${registerRes.status} ${await registerRes.text()}`,
+    )
+  }
+
+  await page.goto('/login')
+  await page.getByTestId('login-username-input').fill('chatuser')
+  await page.getByTestId('login-password-input').fill('chatpass123')
+  await page.getByTestId('login-submit-button').click()
+  await page.waitForURL('/')
 }
 
 test.describe('Agent Chat Panel', () => {
   test('opens, minimizes, and reopens as floating panel', async ({ page }) => {
-    await mockAuth(page)
-    await page.goto('/', { waitUntil: 'networkidle' })
+    await registerAndLogin(page)
     await page.getByTestId('agent-chat-minimized-button').click()
     await expect(page.getByTestId('agent-chat-panel')).toBeVisible()
     await page.getByTestId('agent-chat-minimize-button').click()
@@ -23,9 +36,10 @@ test.describe('Agent Chat Panel', () => {
     await expect(page.getByTestId('agent-chat-dock-button')).toBeVisible()
   })
 
-  test('keeps floating panel inside the viewport while dragging', async ({ page }) => {
-    await mockAuth(page)
-    await page.goto('/', { waitUntil: 'networkidle' })
+  test('keeps floating panel inside the viewport while dragging', async ({
+    page,
+  }) => {
+    await registerAndLogin(page)
     await page.getByTestId('agent-chat-minimized-button').click()
 
     const handle = page.getByTestId('agent-chat-drag-handle')
@@ -44,9 +58,10 @@ test.describe('Agent Chat Panel', () => {
     expect(panelBox!.y).toBeGreaterThanOrEqual(0)
   })
 
-  test('docks, resizes, persists width, and restores floating mode', async ({ page }) => {
-    await mockAuth(page)
-    await page.goto('/', { waitUntil: 'networkidle' })
+  test('docks, resizes, persists width, and restores floating mode', async ({
+    page,
+  }) => {
+    await registerAndLogin(page)
     await page.getByTestId('agent-chat-minimized-button').click()
     await page.getByTestId('agent-chat-dock-button').click()
 
@@ -54,7 +69,9 @@ test.describe('Agent Chat Panel', () => {
     await expect(page.getByTestId('agent-chat-resize-handle')).toBeVisible()
 
     const before = await panel.boundingBox()
-    const handleBox = await page.getByTestId('agent-chat-resize-handle').boundingBox()
+    const handleBox = await page
+      .getByTestId('agent-chat-resize-handle')
+      .boundingBox()
     expect(before).not.toBeNull()
     expect(handleBox).not.toBeNull()
 
@@ -79,27 +96,35 @@ test.describe('Agent Chat Panel', () => {
     await expect(page.getByTestId('agent-chat-dock-button')).toBeVisible()
   })
 
-  test('opens history drawer, switches sessions, and creates new conversation', async ({ page }) => {
-    await mockAuth(page)
-    await page.goto('/', { waitUntil: 'networkidle' })
+  test('opens history drawer, switches sessions, and creates new conversation', async ({
+    page,
+  }) => {
+    await registerAndLogin(page)
     await page.getByTestId('agent-chat-minimized-button').click()
     await page.getByTestId('agent-chat-menu-button').click()
     await expect(page.getByTestId('agent-chat-history-drawer')).toBeVisible()
 
     await page.getByTestId('agent-chat-session-item-session-hello').click()
-    await expect(page.getByTestId('agent-chat-history-drawer')).toHaveClass(/-translate-x-full/)
+    await expect(page.getByTestId('agent-chat-history-drawer')).toHaveClass(
+      /-translate-x-full/,
+    )
     await expect(page.getByTestId('agent-chat-panel')).toContainText('你好')
 
     await page.getByTestId('agent-chat-new-conversation-button').click()
     await page.getByTestId('agent-chat-input').fill('写一个测试消息')
     await page.getByTestId('agent-chat-send-button').click()
-    await expect(page.getByTestId('agent-chat-panel')).toContainText('写一个测试消息')
-    await expect(page.getByTestId('agent-chat-panel')).toContainText('本地 Mock 回复')
+    await expect(page.getByTestId('agent-chat-panel')).toContainText(
+      '写一个测试消息',
+    )
+    await expect(page.getByTestId('agent-chat-panel')).toContainText(
+      '本地 Mock 回复',
+    )
   })
 
-  test('creates selection attachment chips and sends them with a message', async ({ page }) => {
-    await mockAuth(page)
-    await page.goto('/', { waitUntil: 'networkidle' })
+  test('creates selection attachment chips and sends them with a message', async ({
+    page,
+  }) => {
+    await registerAndLogin(page)
     await page.getByTestId('agent-chat-minimized-button').click()
 
     await page.getByTestId('selection-tool-button').click()
@@ -117,13 +142,16 @@ test.describe('Agent Chat Panel', () => {
     await page.getByTestId('agent-chat-input').fill('解释这个区域')
     await page.getByTestId('agent-chat-send-button').click()
 
-    await expect(page.getByTestId('agent-chat-panel')).toContainText('解释这个区域')
-    await expect(page.getByTestId('agent-chat-attachment-list')).not.toBeVisible()
+    await expect(page.getByTestId('agent-chat-panel')).toContainText(
+      '解释这个区域',
+    )
+    await expect(
+      page.getByTestId('agent-chat-attachment-list'),
+    ).not.toBeVisible()
   })
 
   test('removes a pending selection attachment', async ({ page }) => {
-    await mockAuth(page)
-    await page.goto('/', { waitUntil: 'networkidle' })
+    await registerAndLogin(page)
     await page.getByTestId('agent-chat-minimized-button').click()
 
     await page.getByTestId('selection-tool-button').click()
