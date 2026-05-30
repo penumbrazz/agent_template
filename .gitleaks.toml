@@ -1,0 +1,95 @@
+# Gitleaks Secret Detection Configuration
+# Docs: https://github.com/gitleaks/gitleaks
+
+title = "Agent Template Secret Detection"
+
+[extend]
+useDefault = true
+
+[allowlist]
+paths = [
+    '''\.env\.example$''',
+    '''\.env\.sample$''',
+    '''\.gitleaks\.toml$''',
+    '''\.next/''',
+    '''__pycache__/''',
+    '''node_modules/''',
+    '''\.venv/''',
+    '''sensitive_data_masker\.py$''',
+    '''^backend/\.env$''',
+]
+regexes = [
+    '''sk-test-key-1234567890''',
+    '''app_password''',
+    '''postgres:postgres''',
+]
+
+# Langfuse Secret Key
+[[rules]]
+id = "langfuse-secret-key"
+description = "Langfuse Secret Key"
+regex = '''(?i)langfuse[_-]?secret[_-]?key\s*[:=]\s*['"]?(sk-lf-[a-zA-Z0-9]{20,})['"]?'''
+tags = ["key", "langfuse"]
+
+[rules.allowlist]
+regexes = ['''(?i)langfuse[_-]?secret[_-]?key\s*[:=]\s*$''']
+
+# Langfuse Public Key
+[[rules]]
+id = "langfuse-public-key"
+description = "Langfuse Public Key"
+regex = '''(?i)langfuse[_-]?public[_-]?key\s*[:=]\s*['"]?(pk-lf-[a-zA-Z0-9]{20,})['"]?'''
+tags = ["key", "langfuse"]
+
+[rules.allowlist]
+regexes = ['''(?i)langfuse[_-]?public[_-]?key\s*[:=]\s*$''']
+
+# Secret Key with non-placeholder value
+[[rules]]
+id = "secret-key-real-value"
+description = "Secret Key with non-placeholder value"
+regex = '''(?i)secret[_-]?key\s*[:=]\s*['"]?([a-zA-Z0-9!@#$%^&*]{16,})['"]?'''
+tags = ["key", "secret"]
+
+[rules.allowlist]
+regexes = [
+    '''(?i)secret[_-]?key\s*[:=]\s*['"]?change[_-]?me['"]?''',
+    '''(?i)secret[_-]?key\s*[:=]\s*$''',
+]
+
+# Database URL with password
+[[rules]]
+id = "database-url-with-password"
+description = "Database URL containing credentials"
+regex = '''(?i)(?:postgres(?:ql)?(?:\+[a-z0-9]+)?|mysql(?:\+[a-z0-9]+)?|mongodb(?:\+[a-z0-9]+)?|redis(?:\+[a-z0-9]+)?)://[^\s:]+:([^\s@]+)@[^\s'"]+'''
+tags = ["database", "credentials"]
+
+[rules.allowlist]
+regexes = [
+    '''(?i)your[_-]?password''',
+    '''(?i):\$\{''',
+]
+paths = [
+    '''backend/app/core/config\.py$''',
+]
+[[rules]]
+id = "generic-api-key-in-env"
+description = "Generic API key pattern in env/config files"
+regex = '''(?i)(?:api[_-]?key|token|auth|password|credential|private[_-]?key)\s*[:=]\s*['"]?([A-Za-z0-9_\-]{32,})['"]?'''
+tags = ["key", "generic"]
+
+[rules.allowlist]
+regexes = [
+    '''(?i)(?:api[_-]?key|token)\s*[:=]\s*$''',
+    '''(?i)change[_-]?me''',
+    '''(?i)your[_-]?''',
+    '''(?i)xxx+''',
+    '''(?i)placeholder''',
+]
+
+# Sentry/GlitchTip DSN with credentials
+[[rules]]
+id = "sentry-dsn-real"
+description = "Sentry/GlitchTip DSN with credentials"
+regex = '''https://[a-f0-9]+@[^/\s]+/\d+'''
+tags = ["sentry", "dsn"]

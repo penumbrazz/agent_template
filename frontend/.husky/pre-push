@@ -1,0 +1,18 @@
+# Full secret scan — check all commits being pushed for leaked credentials
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "⚠ gitleaks not installed — skipping secret detection. Install: brew install gitleaks"
+  exit 0
+fi
+
+# Pre-push hook receives push info via stdin: local_ref local_sha remote_ref remote_sha
+while read local_ref local_sha remote_ref remote_sha; do
+  if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
+    continue
+  fi
+  if [ "$local_sha" = "0000000000000000000000000000000000000000" ]; then
+    continue
+  fi
+  # Scan new commits not present on remote
+  range="${remote_sha}..${local_sha}"
+  gitleaks detect --log-opts="$range" --config .gitleaks.toml
+done

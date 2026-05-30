@@ -1,1 +1,9 @@
+# Secret detection — scan staged changes for leaked credentials
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks protect --staged --config .gitleaks.toml
+else
+  echo "⚠ gitleaks not installed — skipping secret detection. Install: brew install gitleaks"
+fi
+
+# Code quality — lint and format
 cd frontend && npx lint-staged
