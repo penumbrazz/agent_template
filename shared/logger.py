@@ -58,7 +58,7 @@ class NonBlockingStreamHandler(logging.StreamHandler):
     Custom stream handler that handles BlockingIOError gracefully
     """
 
-    def emit(self, record):
+    def emit(self, record: logging.LogRecord) -> None:
         """
         Emit a record with error handling for BlockingIOError
         """
@@ -73,13 +73,13 @@ class NonBlockingStreamHandler(logging.StreamHandler):
 
 
 def setup_logger(
-    name,
-    level=logging.INFO,
-    format="%(asctime)s - [%(request_id)s] - [in %(pathname)s:%(lineno)d] - %(levelname)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-    use_multiprocessing_safe=True,
-    include_request_id=True,
-):
+    name: str,
+    level: int = logging.INFO,
+    format: str = "%(asctime)s - [%(request_id)s] - [in %(pathname)s:%(lineno)d] - %(levelname)s - %(message)s",
+    datefmt: str = "%Y-%m-%d %H:%M:%S",
+    use_multiprocessing_safe: bool = True,
+    include_request_id: bool = True,
+) -> logging.Logger:
     """
     Configure and return a logger instance
 

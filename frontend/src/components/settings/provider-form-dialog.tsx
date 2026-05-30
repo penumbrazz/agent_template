@@ -63,7 +63,11 @@ interface ProviderFormBodyProps {
   onClose: () => void
 }
 
-function ProviderFormBody({ provider, onSubmit, onClose }: ProviderFormBodyProps) {
+function ProviderFormBody({
+  provider,
+  onSubmit,
+  onClose,
+}: ProviderFormBodyProps) {
   const isEdit = !!provider
 
   const [name, setName] = useState(provider?.name ?? '')
@@ -117,15 +121,23 @@ function ProviderFormBody({ provider, onSubmit, onClose }: ProviderFormBodyProps
       })
       if (result.success) {
         setTestResult({ passed: true, latencyMs: result.latency_ms })
-        toast.success(translate('settings.modelConfig.connectionSuccessMs', { latencyMs: result.latency_ms }))
+        toast.success(
+          translate('settings.modelConfig.connectionSuccessMs', {
+            latencyMs: result.latency_ms,
+          }),
+        )
       } else {
         setTestResult(null)
-        toast.error(result.error ?? translate('settings.modelConfig.connectionFailed'))
+        toast.error(
+          result.error ?? translate('settings.modelConfig.connectionFailed'),
+        )
       }
     } catch (e) {
       setTestResult(null)
       const message =
-        e instanceof Error ? e.message : translate('settings.modelConfig.connectionTestFailed')
+        e instanceof Error
+          ? e.message
+          : translate('settings.modelConfig.connectionTestFailed')
       toast.error(message)
     } finally {
       setIsTesting(false)
@@ -141,7 +153,9 @@ function ProviderFormBody({ provider, onSubmit, onClose }: ProviderFormBodyProps
       onClose()
     } catch (e) {
       const message =
-        e instanceof Error ? e.message : translate('settings.modelConfig.saveFailed')
+        e instanceof Error
+          ? e.message
+          : translate('settings.modelConfig.saveFailed')
       toast.error(message)
     } finally {
       setLoading(false)
@@ -151,28 +165,43 @@ function ProviderFormBody({ provider, onSubmit, onClose }: ProviderFormBodyProps
   return (
     <>
       <DialogHeader>
-        <DialogTitle>{isEdit ? t('settings.modelConfig.editProvider') : t('settings.modelConfig.addProviderTitle')}</DialogTitle>
+        <DialogTitle>
+          {isEdit
+            ? t('settings.modelConfig.editProvider')
+            : t('settings.modelConfig.addProviderTitle')}
+        </DialogTitle>
       </DialogHeader>
       <div className="space-y-4 py-4">
         <div className="space-y-2">
-          <Label htmlFor="provider-name">{t('settings.modelConfig.providerName')}</Label>
+          <Label htmlFor="provider-name">
+            {t('settings.modelConfig.providerName')}
+          </Label>
           <Input
             id="provider-name"
             data-testid="provider-name-input"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="如 OpenAI、DeepSeek"
+            placeholder={t('settings.modelConfig.providerNamePlaceholder')}
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="provider-type">{t('settings.modelConfig.providerType')}</Label>
+          <Label htmlFor="provider-type">
+            {t('settings.modelConfig.providerType')}
+          </Label>
           <Select value={type} onValueChange={handleTypeChange}>
-            <SelectTrigger id="provider-type" data-testid="provider-type-select">
+            <SelectTrigger
+              id="provider-type"
+              data-testid="provider-type-select"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="openai_compatible">{t('settings.modelConfig.openaiCompatible')}</SelectItem>
-              <SelectItem value="anthropic_compatible">{t('settings.modelConfig.anthropicCompatible')}</SelectItem>
+              <SelectItem value="openai_compatible">
+                {t('settings.modelConfig.openaiCompatible')}
+              </SelectItem>
+              <SelectItem value="anthropic_compatible">
+                {t('settings.modelConfig.anthropicCompatible')}
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -188,7 +217,8 @@ function ProviderFormBody({ provider, onSubmit, onClose }: ProviderFormBodyProps
         </div>
         <div className="space-y-2">
           <Label htmlFor="provider-key">
-            {t('settings.modelConfig.apiKey')}{isEdit && t('settings.modelConfig.apiKeyEditHint')}
+            {t('settings.modelConfig.apiKey')}
+            {isEdit && t('settings.modelConfig.apiKeyEditHint')}
           </Label>
           <div className="relative">
             <Input
@@ -197,7 +227,11 @@ function ProviderFormBody({ provider, onSubmit, onClose }: ProviderFormBodyProps
               type={showKey ? 'text' : 'password'}
               value={apiKey}
               onChange={(e) => handleApiKeyChange(e.target.value)}
-              placeholder={isEdit ? '••••••••' : t('settings.modelConfig.apiKeyPlaceholder')}
+              placeholder={
+                isEdit
+                  ? '••••••••'
+                  : t('settings.modelConfig.apiKeyPlaceholder')
+              }
             />
             <button
               type="button"
@@ -205,7 +239,11 @@ function ProviderFormBody({ provider, onSubmit, onClose }: ProviderFormBodyProps
               className="absolute right-2 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary"
               data-testid="toggle-key-visibility"
             >
-              {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              {showKey ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
             </button>
           </div>
         </div>
@@ -217,7 +255,11 @@ function ProviderFormBody({ provider, onSubmit, onClose }: ProviderFormBodyProps
           data-testid="test-success-indicator"
         >
           <CheckCircle2 className="h-4 w-4" />
-          <span>{translate('settings.modelConfig.connectionSuccessMs', { latencyMs: testResult.latencyMs })}</span>
+          <span>
+            {translate('settings.modelConfig.connectionSuccessMs', {
+              latencyMs: testResult.latencyMs,
+            })}
+          </span>
         </div>
       )}
 
@@ -231,7 +273,9 @@ function ProviderFormBody({ provider, onSubmit, onClose }: ProviderFormBodyProps
           className="gap-1.5"
         >
           <FlaskConical className="h-3.5 w-3.5" />
-          {isTesting ? t('settings.modelConfig.testing') : t('settings.modelConfig.testConnection')}
+          {isTesting
+            ? t('settings.modelConfig.testing')
+            : t('settings.modelConfig.testConnection')}
         </Button>
         <div className="flex gap-2">
           <Button

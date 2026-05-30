@@ -67,13 +67,13 @@ export const en = {
       apiKey: 'API Key',
       apiKeyEditHint: '(leave empty to keep current)',
       apiKeyPlaceholder: 'Enter API Key',
+      providerNamePlaceholder: 'e.g. OpenAI, DeepSeek',
       testConnection: 'Test Connection',
       testing: 'Testing...',
       connectionSuccess: 'Connection successful',
       connectionSuccessMs: 'Connection successful ({latencyMs}ms)',
       connectionFailed: 'Connection failed',
-      connectionTestFailed:
-        'Connection test failed, please check your network',
+      connectionTestFailed: 'Connection test failed, please check your network',
       addModelTitle: 'Add Model Manually',
       displayName: 'Display Name (optional)',
       addingModel: 'Adding...',
@@ -103,5 +103,16 @@ export const en = {
       connectionFailedError: 'Connection failed: {error}',
       test: 'Test',
     },
+  },
+  agentChat: {
+    startConversation: 'Start a new conversation',
+    inputPlaceholder: 'Type a message...',
+    agent: 'Agent',
+    newConversation: 'New conversation',
+    messageCountJustNow: '{count} messages · just now',
+    mockGreeting:
+      'Hello, I am your Agent assistant. Using mock data to demonstrate the chat.',
+    mockReply:
+      'Received. This is a local mock reply for testing chat panel interactions.',
   },
 } as const

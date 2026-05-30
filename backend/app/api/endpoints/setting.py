@@ -15,6 +15,7 @@ def get_all_settings(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    """List all application settings."""
     return list_settings(db)
 
 
@@ -25,6 +26,7 @@ def update_setting(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_superuser),
 ):
+    """Update an application setting by key."""
     if key not in ALLOWED_KEYS:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

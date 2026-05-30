@@ -46,6 +46,7 @@ class Settings(BaseSettings):
     )
 
     def model_post_init(self, __context) -> None:
+        """Validate insecure defaults after model initialization."""
         if self.ENVIRONMENT != "development" and self.SECRET_KEY in _INSECURE_DEFAULTS:
             raise ValueError(
                 f"SECRET_KEY is set to insecure default '{self.SECRET_KEY}'. "
@@ -65,6 +66,7 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
+    """Return a cached application Settings instance."""
     return Settings()
 
 

@@ -13,6 +13,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_PREFIX}/auth/login
 def get_current_user(
     token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
 ) -> User:
+    """Extract and validate the current user from the JWT token."""
     payload = decode_access_token(token)
     if payload is None:
         raise HTTPException(
@@ -38,6 +39,7 @@ def get_current_user(
 def require_superuser(
     current_user: User = Depends(get_current_user),
 ) -> User:
+    """Ensure the current user has superuser privileges."""
     if not current_user.is_superuser:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

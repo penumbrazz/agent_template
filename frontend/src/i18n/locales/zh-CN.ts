@@ -45,8 +45,7 @@ export const zhCN: DeepPartialMessageTree<typeof en> = {
       defaultModel: '默认模型',
       selectModel: '选择默认模型',
       noModels: '暂无启用的模型',
-      defaultModelDesc:
-        '对话时默认使用的模型。请先在模型配置中启用模型。',
+      defaultModelDesc: '对话时默认使用的模型。请先在模型配置中启用模型。',
       saveFailed: '保存设置失败',
       language: '语言',
     },
@@ -68,6 +67,7 @@ export const zhCN: DeepPartialMessageTree<typeof en> = {
       apiKey: 'API Key',
       apiKeyEditHint: '（留空则不修改）',
       apiKeyPlaceholder: '输入 API Key',
+      providerNamePlaceholder: '如 OpenAI、DeepSeek',
       testConnection: '测试连接',
       testing: '测试中...',
       connectionSuccess: '连接成功',
@@ -103,5 +103,15 @@ export const zhCN: DeepPartialMessageTree<typeof en> = {
       connectionFailedError: '连接失败: {error}',
       test: '测试',
     },
+  },
+  agentChat: {
+    startConversation: '开始一段新对话',
+    inputPlaceholder: '输入消息...',
+    agent: '智能体',
+    newConversation: '新对话',
+    messageCountJustNow: '{count} 条 · 刚刚',
+    mockGreeting:
+      '你好，我是你的 Agent 助手。这里先使用 Mock 数据展示对话效果。',
+    mockReply: '收到。这是一条本地 Mock 回复，用于验证聊天面板交互。',
   },
 }

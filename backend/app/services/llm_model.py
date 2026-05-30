@@ -8,6 +8,7 @@ from app.services.setting import clear_default_model_if_matches
 
 
 def to_read(m: LLMModel) -> dict:
+    """Convert an LLMModel ORM instance to a read-friendly dictionary."""
     return {
         "id": m.id,
         "provider_id": m.provider_id,
@@ -22,6 +23,7 @@ def to_read(m: LLMModel) -> dict:
 
 
 def list_enabled_models(db: Session) -> list[LLMModel]:
+    """Return all enabled models ordered by creation date descending."""
     return (
         db.query(LLMModel)
         .filter(LLMModel.is_enabled == True)
@@ -31,14 +33,17 @@ def list_enabled_models(db: Session) -> list[LLMModel]:
 
 
 def list_all_models(db: Session) -> list[LLMModel]:
+    """Return all models ordered by creation date descending."""
     return db.query(LLMModel).order_by(LLMModel.created_at.desc()).all()
 
 
 def get_model(db: Session, model_id: str) -> Optional[LLMModel]:
+    """Return the model with the given ID, or None if not found."""
     return db.query(LLMModel).filter(LLMModel.id == model_id).first()
 
 
 def create_model(db: Session, data: ModelCreate) -> LLMModel:
+    """Create and persist a new LLM model from the given data."""
     model = LLMModel(
         provider_id=data.provider_id,
         model_id=data.model_id,
@@ -52,6 +57,7 @@ def create_model(db: Session, data: ModelCreate) -> LLMModel:
 
 
 def update_model(db: Session, model: LLMModel, data: ModelUpdate) -> LLMModel:
+    """Update a model's fields from partial update data."""
     update_data = data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(model, field, value)
@@ -61,12 +67,14 @@ def update_model(db: Session, model: LLMModel, data: ModelUpdate) -> LLMModel:
 
 
 def delete_model(db: Session, model: LLMModel) -> None:
+    """Delete a model and clear the default model setting if it matches."""
     clear_default_model_if_matches(db, model.id)
     db.delete(model)
     db.commit()
 
 
 def toggle_model(db: Session, model: LLMModel) -> LLMModel:
+    """Toggle a model's enabled state, clearing defaults if disabled."""
     model.is_enabled = not model.is_enabled
     if not model.is_enabled:
         clear_default_model_if_matches(db, model.id)

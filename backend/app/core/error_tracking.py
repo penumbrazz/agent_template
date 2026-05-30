@@ -11,6 +11,7 @@ _SAMPLE_RATE_MAP = {
 
 
 def init_error_tracking() -> bool:
+    """Initialize Sentry/GlitchTip error tracking."""
     if not settings.SENTRY_DSN:
         return False
     rate = settings.SENTRY_TRACES_SAMPLE_RATE or _SAMPLE_RATE_MAP.get(

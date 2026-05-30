@@ -31,6 +31,7 @@ def validate_provider_endpoint(
     data: ProviderValidateRequest,
     current_user: User = Depends(require_superuser),
 ):
+    """Validate provider credentials without creating."""
     result = validate_provider(data.base_url, data.api_key, data.provider_type.value)
     return result
 
@@ -40,6 +41,7 @@ def list_all_providers(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    """List all configured providers."""
     providers = list_providers(db)
     return [provider_to_read(p) for p in providers]
 
@@ -50,6 +52,7 @@ def create_new_provider(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_superuser),
 ):
+    """Create a new provider configuration."""
     provider = create_provider(db, data)
     return provider_to_read(provider)
 
@@ -61,6 +64,7 @@ def update_existing_provider(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_superuser),
 ):
+    """Update an existing provider configuration."""
     provider = get_provider(db, provider_id)
     if not provider:
         raise HTTPException(status_code=404, detail="Provider not found")
@@ -74,6 +78,7 @@ def delete_existing_provider(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_superuser),
 ):
+    """Delete a provider configuration."""
     provider = get_provider(db, provider_id)
     if not provider:
         raise HTTPException(status_code=404, detail="Provider not found")
@@ -86,6 +91,7 @@ def fetch_provider_models(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_superuser),
 ):
+    """Fetch available models from a provider's API."""
     provider = get_provider(db, provider_id)
     if not provider:
         raise HTTPException(status_code=404, detail="Provider not found")
@@ -109,6 +115,7 @@ def test_provider_connection(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_superuser),
 ):
+    """Test connectivity to a provider endpoint."""
     provider = get_provider(db, provider_id)
     if not provider:
         raise HTTPException(status_code=404, detail="Provider not found")

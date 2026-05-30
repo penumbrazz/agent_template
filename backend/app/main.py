@@ -19,6 +19,7 @@ from app.db.session import SessionLocal
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """Manage application startup and shutdown lifecycle."""
     setup_logging()
     # Seed default admin user
     db = SessionLocal()
@@ -37,6 +38,7 @@ async def lifespan(app: FastAPI):
 
 
 def create_app() -> FastAPI:
+    """Create and configure the FastAPI application instance."""
     openapi_url = (
         f"{settings.API_PREFIX}/openapi.json" if settings.ENABLE_API_DOCS else None
     )

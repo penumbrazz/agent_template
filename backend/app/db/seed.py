@@ -13,6 +13,7 @@ DEFAULT_ADMIN_EMAIL = "admin@localhost"
 
 
 def seed_default_admin(db: Session) -> None:
+    """Create or reset the default admin user."""
     existing = db.query(User).filter(User.username == DEFAULT_ADMIN_USERNAME).first()
     if existing:
         if settings.ENVIRONMENT == "development":

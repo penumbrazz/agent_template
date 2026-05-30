@@ -32,7 +32,11 @@ Environment Variables:
 import os
 import re
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
+
+# Body size constants
+DEFAULT_MAX_BODY_SIZE = 4096  # Default max body size to capture in bytes
+MAX_BODY_SIZE_HARD_LIMIT = 1048576  # Hard limit of 1MB to prevent memory issues
 
 # Default URL patterns to exclude from tracing (health checks, docs, static assets)
 DEFAULT_EXCLUDED_URLS = [
@@ -153,8 +157,8 @@ def get_otel_config(service_name_override: Optional[str] = None) -> OtelConfig:
             ).lower()
             == "true",
             max_body_size=min(
-                int(os.getenv("OTEL_MAX_BODY_SIZE", "4096")),
-                10485760,  # Hard limit of 1MB to prevent memory issues
+                int(os.getenv("OTEL_MAX_BODY_SIZE", str(DEFAULT_MAX_BODY_SIZE))),
+                MAX_BODY_SIZE_HARD_LIMIT,
             ),
             excluded_urls=excluded_urls,
             included_urls=included_urls,
@@ -169,7 +173,7 @@ def get_otel_config(service_name_override: Optional[str] = None) -> OtelConfig:
     return _otel_config
 
 
-def get_otel_config_from_env() -> Dict[str, any]:
+def get_otel_config_from_env() -> Dict[str, Any]:
     """
     Get OpenTelemetry configuration from environment variables as a dictionary.
 
@@ -195,16 +199,16 @@ def get_otel_config_from_env() -> Dict[str, any]:
 
 
 # Global HTTP capture settings
-_http_capture_settings: Dict[str, any] = {
+_http_capture_settings: Dict[str, Any] = {
     "capture_request_headers": False,
     "capture_request_body": False,
     "capture_response_headers": False,
     "capture_response_body": False,
-    "max_body_size": 4096,
+    "max_body_size": DEFAULT_MAX_BODY_SIZE,
 }
 
 
-def get_http_capture_settings() -> Dict[str, any]:
+def get_http_capture_settings() -> Dict[str, Any]:
     """
     Get the current HTTP capture settings.
 
@@ -219,7 +223,7 @@ def set_http_capture_settings(
     capture_request_body: bool = False,
     capture_response_headers: bool = False,
     capture_response_body: bool = False,
-    max_body_size: int = 4096,
+    max_body_size: int = DEFAULT_MAX_BODY_SIZE,
 ) -> None:
     """
     Set HTTP capture settings globally.

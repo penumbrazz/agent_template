@@ -10,6 +10,7 @@ _client: Langfuse | None = None
 
 
 def init_langfuse() -> Langfuse | None:
+    """Initialize the Langfuse observability client."""
     global _client
     if not settings.LANGFUSE_SECRET_KEY:
         return None
@@ -27,10 +28,12 @@ def init_langfuse() -> Langfuse | None:
 
 
 def get_langfuse() -> Langfuse | None:
+    """Return the initialized Langfuse client instance."""
     return _client
 
 
 def shutdown_langfuse() -> None:
+    """Flush pending events and release the Langfuse client."""
     global _client
     if _client is not None:
         _client.flush()

@@ -2,6 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400&display=swap');
+
 :root {
   /* DESIGN.md color system — warm cream + coral palette */
 
@@ -9,21 +11,50 @@
   --color-bg-base: 250 249 245; /* canvas #faf9f5 */
   --color-bg-surface: 239 233 222; /* surface-card #efe9de */
 
+  /* Surface extended */
+  --color-surface-soft: 245 240 232; /* #f5f0e8 */
+  --color-surface-cream-strong: 232 224 210; /* #e8e0d2 */
+  --color-surface-dark: 24 23 21; /* #181715 */
+  --color-surface-dark-elevated: 37 35 32; /* #252320 */
+  --color-surface-dark-soft: 31 30 27; /* #1f1e1b */
+
   /* Text */
   --color-text-primary: 20 20 19; /* ink #141413 */
   --color-text-secondary: 61 61 58; /* body #3d3d3a */
   --color-text-muted: 108 106 100; /* muted #6c6a64 */
 
+  /* Text extended */
+  --color-text-body-strong: 37 37 35; /* #252523 */
+  --color-text-muted-soft: 142 139 130; /* #8e8b82 */
+  --color-on-dark: 250 249 245; /* #faf9f5 */
+  --color-on-dark-soft: 160 157 150; /* #a09d96 */
+
   /* Brand / Primary */
   --color-primary: 204 120 92; /* coral #cc785c */
   --color-primary-active: 169 88 62; /* coral-active #a9583e */
 
+  /* Primary extended */
+  --color-primary-disabled: 230 223 216; /* #e6dfd8 */
+
+  /* Accent */
+  --color-accent-teal: 93 184 166; /* #5db8a6 */
+  --color-accent-amber: 232 165 90; /* #e8a55a */
+
   /* Borders */
   --color-border: 230 223 216; /* hairline #e6dfd8 */
+
+  /* Borders extended */
+  --color-hairline-soft: 235 230 223; /* #ebe6df */
 
   /* Semantic */
   --color-error: 198 69 69; /* error #c64545 */
   --color-success: 93 184 114; /* success #5db872 */
+
+  /* Semantic extended */
+  --color-warning: 212 160 23; /* #d4a017 */
+
+  /* On-primary */
+  --color-on-primary: 255 255 255; /* #ffffff */
 
   --radius: 0.5rem;
 }
@@ -36,6 +67,11 @@ body {
   margin: 0;
   background-color: rgb(var(--color-bg-base));
   color: rgb(var(--color-text-secondary));
-  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
     sans-serif;
 }

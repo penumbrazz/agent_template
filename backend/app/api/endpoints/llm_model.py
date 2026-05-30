@@ -29,6 +29,7 @@ def list_enabled(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    """List all enabled LLM models."""
     models = list_enabled_models(db)
     return [model_to_read(m) for m in models]
 
@@ -38,6 +39,7 @@ def list_all(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_superuser),
 ):
+    """List all LLM models including disabled ones."""
     models = list_all_models(db)
     return [model_to_read(m) for m in models]
 
@@ -48,6 +50,7 @@ def create_new_model(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_superuser),
 ):
+    """Create a new LLM model configuration."""
     model = create_model(db, data)
     return model_to_read(model)
 
@@ -59,6 +62,7 @@ def update_existing_model(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_superuser),
 ):
+    """Update an existing LLM model configuration."""
     model = get_model(db, model_id)
     if not model:
         raise HTTPException(status_code=404, detail="Model not found")
@@ -72,6 +76,7 @@ def delete_existing_model(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_superuser),
 ):
+    """Delete an LLM model configuration."""
     model = get_model(db, model_id)
     if not model:
         raise HTTPException(status_code=404, detail="Model not found")
@@ -84,6 +89,7 @@ def toggle_model_status(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_superuser),
 ):
+    """Toggle the enabled status of an LLM model."""
     model = get_model(db, model_id)
     if not model:
         raise HTTPException(status_code=404, detail="Model not found")

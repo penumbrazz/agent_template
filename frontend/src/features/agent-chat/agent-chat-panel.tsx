@@ -1,11 +1,23 @@
 'use client'
 
-import { MessageCircle, Menu, Plus, PanelRightOpen, Minus, Send } from 'lucide-react'
+import {
+  MessageCircle,
+  Menu,
+  Plus,
+  PanelRightOpen,
+  Minus,
+  Send,
+} from 'lucide-react'
 import { useState } from 'react'
 
 import { cn } from '@/lib/utils'
+import { useT } from '@/i18n'
 
-import { FLOATING_HEIGHT, FLOATING_WIDTH, useBoundedFloatingPanel } from './use-bounded-floating-panel'
+import {
+  FLOATING_HEIGHT,
+  FLOATING_WIDTH,
+  useBoundedFloatingPanel,
+} from './use-bounded-floating-panel'
 import { useDockedPanelWidth } from './use-docked-panel-width'
 import { useAgentChatState } from './use-agent-chat-state'
 import type { AgentChatMode } from './types'
@@ -13,6 +25,7 @@ import type { AgentChatMode } from './types'
 export function AgentChatPanel() {
   const [mode, setMode] = useState<AgentChatMode>('minimized')
   const [draft, setDraft] = useState('')
+  const t = useT()
 
   const {
     sessions,
@@ -82,7 +95,7 @@ export function AgentChatPanel() {
         )}
       >
         <MessageCircle className="h-4 w-4" />
-        Agent
+        {t('agentChat.agent')}
       </button>
     )
   }
@@ -99,7 +112,12 @@ export function AgentChatPanel() {
       style={
         isDocked
           ? { width: dockedWidth }
-          : { width: FLOATING_WIDTH, height: FLOATING_HEIGHT, left: position.x, top: position.y }
+          : {
+              width: FLOATING_WIDTH,
+              height: FLOATING_HEIGHT,
+              left: position.x,
+              top: position.y,
+            }
       }
     >
       {/* Title bar */}
@@ -127,7 +145,7 @@ export function AgentChatPanel() {
         </button>
 
         <span className="flex-1 truncate text-center text-sm font-medium">
-          {currentSession.title}
+          {currentSession.title || t('agentChat.newConversation')}
         </span>
 
         {isDocked ? (
@@ -179,38 +197,44 @@ export function AgentChatPanel() {
             'absolute inset-y-0 left-0 z-20 w-64 border-r border-border bg-base shadow-lg transition-transform duration-300',
             isHistoryOpen ? 'translate-x-0' : '-translate-x-full',
           )}
-          >
-            <div className="overflow-y-auto p-2">
-              {sessions.map(session => (
-                <button
-                  key={session.id}
-                  data-testid={`agent-chat-session-item-${session.id}`}
-                  onClick={() => selectSession(session.id)}
-                  className={cn(
-                    'w-full rounded-lg px-3 py-2 text-left text-sm transition-colors',
-                    session.id === currentSessionId
-                      ? 'bg-surface font-medium'
-                      : 'hover:bg-surface',
-                  )}
-                  type="button"
-                >
-                  <div className="truncate">{session.title}</div>
-                  <div className="text-xs text-text-muted">{session.updatedLabel}</div>
-                </button>
-              ))}
-            </div>
+        >
+          <div className="overflow-y-auto p-2">
+            {sessions.map((session) => (
+              <button
+                key={session.id}
+                data-testid={`agent-chat-session-item-${session.id}`}
+                onClick={() => selectSession(session.id)}
+                className={cn(
+                  'w-full rounded-lg px-3 py-2 text-left text-sm transition-colors',
+                  session.id === currentSessionId
+                    ? 'bg-surface font-medium'
+                    : 'hover:bg-surface',
+                )}
+                type="button"
+              >
+                <div className="truncate">
+                  {session.title || t('agentChat.newConversation')}
+                </div>
+                <div className="text-xs text-text-muted">
+                  {session.updatedLabel}
+                </div>
+              </button>
+            ))}
           </div>
+        </div>
 
         {/* Chat content */}
         <div className="flex h-full flex-col">
           <div className="flex-1 overflow-y-auto p-4">
             {currentSession.messages.length === 0 ? (
               <div className="flex h-full items-center justify-center">
-                <p className="text-sm text-text-muted">开始一段新对话</p>
+                <p className="text-sm text-text-muted">
+                  {t('agentChat.startConversation')}
+                </p>
               </div>
             ) : (
               <div className="space-y-3">
-                {currentSession.messages.map(message => (
+                {currentSession.messages.map((message) => (
                   <div
                     key={message.id}
                     className={cn(
@@ -233,9 +257,9 @@ export function AgentChatPanel() {
               <textarea
                 data-testid="agent-chat-input"
                 value={draft}
-                onChange={event => setDraft(event.target.value)}
+                onChange={(event) => setDraft(event.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="输入消息..."
+                placeholder={t('agentChat.inputPlaceholder')}
                 rows={1}
                 className="flex-1 resize-none rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-primary"
               />

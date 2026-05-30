@@ -11,6 +11,8 @@ from app.models.user import User
 from app.schemas.user import TokenWithExpiry, UserCreate, UserLogin, UserRead
 from app.services.auth import (
     authenticate_user,
+    create_access_token,
+    create_refresh_token,
     refresh_user_token,
     register_user,
     revoke_refresh_token,
@@ -22,6 +24,7 @@ REFRESH_TOKEN_KEY = "refresh_token"
 
 
 def _set_refresh_cookie(response: Response, refresh_token: str) -> None:
+    """Set the refresh token as an HttpOnly cookie on the response."""
     response.set_cookie(
         key=REFRESH_TOKEN_KEY,
         value=refresh_token,
@@ -34,6 +37,7 @@ def _set_refresh_cookie(response: Response, refresh_token: str) -> None:
 
 
 def _clear_refresh_cookie(response: Response) -> None:
+    """Clear the refresh token cookie from the response."""
     response.set_cookie(
         key=REFRESH_TOKEN_KEY,
         value="",
@@ -48,6 +52,7 @@ def _clear_refresh_cookie(response: Response) -> None:
 @router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 @limiter.limit("5/minute")
 def register(request: Request, user_in: UserCreate, db: Session = Depends(get_db)) -> User:
+    """Register a new user account."""
     try:
         return register_user(db, user_in)
     except ValueError as e:
@@ -61,14 +66,13 @@ def register(request: Request, user_in: UserCreate, db: Session = Depends(get_db
 @router.post("/login", response_model=TokenWithExpiry)
 @limiter.limit("10/minute")
 def login(request: Request, response: Response, user_in: UserLogin, db: Session = Depends(get_db)) -> dict:
+    """Authenticate a user and return JWT tokens."""
     try:
         user = authenticate_user(db, user_in)
     except ValueError as e:
         if "disabled" in str(e):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
-    from app.services.auth import create_access_token, create_refresh_token
-
     access_token = create_access_token(data={"sub": user.id})
     refresh = create_refresh_token(data={"sub": user.id, "tv": user.token_version})
     _set_refresh_cookie(response, refresh)
@@ -87,6 +91,7 @@ def refresh(
     refresh_token: Optional[str] = Cookie(None, alias=REFRESH_TOKEN_KEY),
     db: Session = Depends(get_db),
 ) -> dict:
+    """Exchange a valid refresh token for new JWT tokens."""
     if not refresh_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -108,6 +113,7 @@ def logout(
     refresh_token: Optional[str] = Cookie(None, alias=REFRESH_TOKEN_KEY),
     db: Session = Depends(get_db),
 ) -> dict:
+    """Revoke the refresh token and clear the cookie."""
     _clear_refresh_cookie(response)
     if refresh_token:
         revoke_refresh_token(db, refresh_token)
@@ -116,4 +122,5 @@ def logout(
 
 @router.get("/me", response_model=UserRead)
 def get_me(current_user: User = Depends(get_current_user)) -> User:
+    """Return the currently authenticated user."""
     return current_user

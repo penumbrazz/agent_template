@@ -17,6 +17,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 def get_db() -> Generator[Session, None, None]:
+    """Yield a database session and ensure cleanup."""
     db = SessionLocal()
     try:
         yield db

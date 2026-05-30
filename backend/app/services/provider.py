@@ -10,10 +10,13 @@ from app.schemas.provider import ProviderCreate, ProviderType, ProviderUpdate
 from app.services.setting import clear_default_model_if_unavailable
 from shared.utils.crypto import decrypt_api_key, encrypt_api_key, mask_api_key
 
+ANTHROPIC_API_VERSION = "2023-06-01"
+
 _http_client: Optional[httpx.Client] = None
 
 
 def _get_http_client() -> httpx.Client:
+    """Return the shared httpx client, creating one if needed."""
     global _http_client
     if _http_client is None or _http_client.is_closed:
         _http_client = httpx.Client(timeout=30.0)
@@ -21,6 +24,15 @@ def _get_http_client() -> httpx.Client:
 
 
 def _build_headers(api_key: str, provider_type: str) -> dict[str, str]:
+    """Build authentication headers based on the provider type.
+
+    Args:
+        api_key: The decrypted API key.
+        provider_type: The provider type string (e.g. "openai_compatible").
+
+    Returns:
+        A dict of HTTP headers for authenticating with the provider.
+    """
     headers: dict[str, str] = {}
     if not api_key:
         return headers
@@ -28,11 +40,12 @@ def _build_headers(api_key: str, provider_type: str) -> dict[str, str]:
         headers["Authorization"] = f"Bearer {api_key}"
     else:
         headers["x-api-key"] = api_key
-        headers["anthropic-version"] = "2023-06-01"
+        headers["anthropic-version"] = ANTHROPIC_API_VERSION
     return headers
 
 
 def _mask_key(encrypted_key: str) -> str:
+    """Decrypt an API key and return its masked representation."""
     decrypted = decrypt_api_key(encrypted_key)
     if not decrypted:
         return "***"
@@ -40,6 +53,7 @@ def _mask_key(encrypted_key: str) -> str:
 
 
 def to_read(p: Provider) -> dict:
+    """Convert a Provider ORM instance to a read-friendly dictionary."""
     return {
         "id": p.id,
         "name": p.name,
@@ -53,14 +67,24 @@ def to_read(p: Provider) -> dict:
 
 
 def _normalize_base_url(url: str) -> str:
+    """Strip trailing slashes from a base URL."""
     return url.rstrip("/")
 
 
 def _models_path(provider_type: str) -> str:
+    """Return the API path for listing models based on the provider type."""
     return "/models"
 
 
 def _timed_request(fn) -> dict:
+    """Execute a callable and return a dict with success status, latency, and error.
+
+    Args:
+        fn: A zero-argument callable to execute and time.
+
+    Returns:
+        A dict containing 'success', 'latency_ms', and 'error' keys.
+    """
     start = time.monotonic()
     try:
         fn()
@@ -72,14 +96,17 @@ def _timed_request(fn) -> dict:
 
 
 def list_providers(db: Session) -> list[Provider]:
+    """Return all providers ordered by creation date descending."""
     return db.query(Provider).order_by(Provider.created_at.desc()).all()
 
 
 def get_provider(db: Session, provider_id: str) -> Optional[Provider]:
+    """Return the provider with the given ID, or None if not found."""
     return db.query(Provider).filter(Provider.id == provider_id).first()
 
 
 def create_provider(db: Session, data: ProviderCreate) -> Provider:
+    """Create and persist a new provider from the given data."""
     provider = Provider(
         name=data.name,
         type=data.type.value,
@@ -93,6 +120,16 @@ def create_provider(db: Session, data: ProviderCreate) -> Provider:
 
 
 def update_provider(db: Session, provider: Provider, data: ProviderUpdate) -> Provider:
+    """Update a provider's fields from partial update data.
+
+    Args:
+        db: The database session.
+        provider: The provider ORM instance to update.
+        data: Partial update payload; unset fields are ignored.
+
+    Returns:
+        The updated and refreshed Provider instance.
+    """
     update_data = data.model_dump(exclude_unset=True)
     if "type" in update_data and update_data["type"] is not None:
         update_data["type"] = update_data["type"].value
@@ -110,11 +147,25 @@ def update_provider(db: Session, provider: Provider, data: ProviderUpdate) -> Pr
 
 
 def delete_provider(db: Session, provider: Provider) -> None:
+    """Delete a provider from the database."""
     db.delete(provider)
     db.commit()
 
 
 def fetch_models(db: Session, provider: Provider) -> list[LLMModel]:
+    """Fetch models from a remote provider and sync with the database.
+
+    Adds newly discovered models, removes models no longer available
+    remotely, and clears the default model setting if it becomes
+    unavailable.
+
+    Args:
+        db: The database session.
+        provider: The provider whose remote models to fetch.
+
+    Returns:
+        A list of newly created LLMModel instances.
+    """
     decrypted_key = decrypt_api_key(provider.encrypted_api_key)
     base_url = _normalize_base_url(provider.base_url)
     headers = _build_headers(decrypted_key, provider.type)
@@ -153,6 +204,16 @@ def fetch_models(db: Session, provider: Provider) -> list[LLMModel]:
 def test_provider(
     db: Session, provider: Provider, model_id: Optional[str] = None
 ) -> dict:
+    """Test provider connectivity by sending a minimal chat completion request.
+
+    Args:
+        db: The database session.
+        provider: The provider to test.
+        model_id: Optional model ID to use; defaults to the first available model.
+
+    Returns:
+        A dict with 'success', 'latency_ms', and 'error' keys.
+    """
     decrypted_key = decrypt_api_key(provider.encrypted_api_key)
 
     if not model_id:
@@ -184,6 +245,7 @@ def test_provider(
 
 
 def validate_provider(base_url: str, api_key: str, provider_type: str) -> dict:
+    """Validate provider credentials by requesting the models endpoint."""
     url = _normalize_base_url(base_url)
     headers = _build_headers(api_key, provider_type)
 
