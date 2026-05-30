@@ -96,4 +96,44 @@ test.describe('Agent Chat Panel', () => {
     await expect(page.getByTestId('agent-chat-panel')).toContainText('写一个测试消息')
     await expect(page.getByTestId('agent-chat-panel')).toContainText('本地 Mock 回复')
   })
+
+  test('creates selection attachment chips and sends them with a message', async ({ page }) => {
+    await mockAuth(page)
+    await page.goto('/', { waitUntil: 'networkidle' })
+    await page.getByTestId('agent-chat-minimized-button').click()
+
+    await page.getByTestId('selection-tool-button').click()
+    await expect(page.getByTestId('selection-overlay')).toBeVisible()
+
+    await page.mouse.move(80, 120)
+    await page.mouse.down()
+    await page.mouse.move(240, 120)
+    await page.mouse.move(240, 220)
+    await page.mouse.up()
+
+    await expect(page.getByTestId('agent-chat-attachment-list')).toBeVisible()
+    await expect(page.getByTestId('agent-chat-attachment-chip')).toHaveCount(1)
+
+    await page.getByTestId('agent-chat-input').fill('解释这个区域')
+    await page.getByTestId('agent-chat-send-button').click()
+
+    await expect(page.getByTestId('agent-chat-panel')).toContainText('解释这个区域')
+    await expect(page.getByTestId('agent-chat-attachment-list')).not.toBeVisible()
+  })
+
+  test('removes a pending selection attachment', async ({ page }) => {
+    await mockAuth(page)
+    await page.goto('/', { waitUntil: 'networkidle' })
+    await page.getByTestId('agent-chat-minimized-button').click()
+
+    await page.getByTestId('selection-tool-button').click()
+    await page.mouse.move(80, 120)
+    await page.mouse.down()
+    await page.mouse.move(220, 180)
+    await page.mouse.up()
+
+    await expect(page.getByTestId('agent-chat-attachment-chip')).toHaveCount(1)
+    await page.getByTestId('agent-chat-attachment-remove').click()
+    await expect(page.getByTestId('agent-chat-attachment-chip')).toHaveCount(0)
+  })
 })
