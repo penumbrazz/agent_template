@@ -8,12 +8,18 @@ class ModelCreate(BaseModel):
     model_id: str = Field(..., min_length=1, max_length=200)
     display_name: str | None = Field(None, max_length=200)
     extra_config: dict | None = None
+    model_type: str = Field("llm", max_length=20)
+    context_length: int | None = None
+    max_output_tokens: int | None = None
 
 
 class ModelUpdate(BaseModel):
     model_id: str | None = Field(None, min_length=1, max_length=200)
     display_name: str | None = Field(None, max_length=200)
     extra_config: dict | None = None
+    model_type: str | None = Field(None, max_length=20)
+    context_length: int | None = None
+    max_output_tokens: int | None = None
 
 
 class ModelRead(BaseModel):
@@ -23,6 +29,9 @@ class ModelRead(BaseModel):
     display_name: str | None
     is_enabled: bool
     extra_config: dict | None
+    model_type: str = "llm"
+    context_length: int | None = None
+    max_output_tokens: int | None = None
     provider_name: str | None = None
     created_at: datetime
     updated_at: datetime
