@@ -175,6 +175,80 @@ class TestProviderFetchModels:
         assert "gpt-4o-mini" not in model_ids
         assert "gpt-4o" in model_ids
 
+    @patch("app.services.provider.httpx.Client")
+    def test_fetch_models_with_metadata(self, mock_client_cls, admin_user, client):
+        create_resp = client.post(
+            "/api/providers",
+            headers=admin_user,
+            json={
+                "name": "OpenAI",
+                "type": "openai_compatible",
+                "base_url": "https://api.openai.com",
+                "api_key": "sk-test-key-1234567890",
+            },
+        )
+        provider_id = create_resp.json()["id"]
+
+        # Mock list response
+        list_resp = MagicMock()
+        list_resp.json.return_value = {
+            "data": [
+                {"id": "gpt-4o"},
+                {"id": "text-embedding-3-small"},
+            ]
+        }
+        list_resp.raise_for_status = MagicMock()
+
+        # Detail responses keyed by URL to handle set iteration order
+        detail_map = {
+            "https://api.openai.com/models/gpt-4o": {
+                "id": "gpt-4o",
+                "max_model_len": 128000,
+                "max_tokens": 16384,
+            },
+            "https://api.openai.com/models/text-embedding-3-small": {
+                "id": "text-embedding-3-small",
+                "max_model_len": 8191,
+            },
+        }
+
+        call_count = [0]
+
+        def mock_get(url, **kwargs):
+            call_count[0] += 1
+            if call_count[0] == 1:
+                return list_resp
+            detail_resp = MagicMock()
+            detail_resp.json.return_value = detail_map[url]
+            detail_resp.raise_for_status = MagicMock()
+            return detail_resp
+
+        mock_client = MagicMock()
+        mock_client.get.side_effect = mock_get
+        mock_client.__enter__ = MagicMock(return_value=mock_client)
+        mock_client.__exit__ = MagicMock(return_value=False)
+        mock_client_cls.return_value = mock_client
+
+        resp = client.post(
+            f"/api/providers/{provider_id}/fetch-models", headers=admin_user
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["fetched"] == 2
+
+        # Verify models have metadata
+        models_resp = client.get("/api/models/all", headers=admin_user)
+        models = models_resp.json()
+        gpt4o = next(m for m in models if m["model_id"] == "gpt-4o")
+        embed = next(m for m in models if m["model_id"] == "text-embedding-3-small")
+
+        assert gpt4o["model_type"] == "llm"
+        assert gpt4o["context_length"] == 128000
+        assert gpt4o["max_output_tokens"] == 16384
+
+        assert embed["model_type"] == "embedding"
+        assert embed["context_length"] == 8191
+
 
 class TestProviderTest:
     @patch("app.services.provider.httpx.Client")

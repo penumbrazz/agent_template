@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.models.llm_model import LLMModel
 from app.models.provider import Provider
 from app.schemas.provider import ProviderCreate, ProviderType, ProviderUpdate
+from app.services.model_metadata import fetch_model_metadata
 from app.services.setting import clear_default_model_if_unavailable
 from shared.utils.crypto import decrypt_api_key, encrypt_api_key, mask_api_key
 
@@ -162,8 +163,8 @@ def delete_provider(db: Session, provider: Provider) -> None:
 def fetch_models(db: Session, provider: Provider) -> list[LLMModel]:
     """Fetch models from a remote provider and sync with the database.
 
-    Adds newly discovered models, removes models no longer available
-    remotely, and clears the default model setting if it becomes
+    Adds newly discovered models with metadata, removes models no longer
+    available remotely, and clears the default model setting if it becomes
     unavailable.
 
     Args:
@@ -195,12 +196,20 @@ def fetch_models(db: Session, provider: Provider) -> list[LLMModel]:
     remaining_model_ids = {m.id for m in existing_models if m.model_id in remote_ids}
     clear_default_model_if_unavailable(db, remaining_model_ids)
 
+    new_ids = remote_ids - existing_ids
     new_models = []
-    for mid in remote_ids:
-        if mid not in existing_ids:
-            model = LLMModel(provider_id=provider.id, model_id=mid, is_enabled=False)
-            db.add(model)
-            new_models.append(model)
+    for mid in new_ids:
+        metadata = fetch_model_metadata(client, base_url, headers, mid)
+        model = LLMModel(
+            provider_id=provider.id,
+            model_id=mid,
+            is_enabled=False,
+            model_type=metadata["model_type"],
+            context_length=metadata["context_length"],
+            max_output_tokens=metadata["max_output_tokens"],
+        )
+        db.add(model)
+        new_models.append(model)
 
     db.commit()
     for m in new_models:
