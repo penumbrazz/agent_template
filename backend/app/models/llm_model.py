@@ -1,4 +1,4 @@
-from sqlalchemy import JSON, Boolean, ForeignKey, String
+from sqlalchemy import JSON, Boolean, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
@@ -7,6 +7,7 @@ from app.models.base import Base, TimestampMixin
 PROVIDER_ID_MAX_LENGTH = 36
 MODEL_ID_MAX_LENGTH = 200
 MODEL_DISPLAY_NAME_MAX_LENGTH = 200
+MODEL_TYPE_MAX_LENGTH = 20
 
 
 class LLMModel(TimestampMixin, Base):
@@ -23,5 +24,10 @@ class LLMModel(TimestampMixin, Base):
     )
     is_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     extra_config: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    model_type: Mapped[str] = mapped_column(
+        String(MODEL_TYPE_MAX_LENGTH), nullable=False, server_default="llm"
+    )
+    context_length: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    max_output_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     provider: Mapped["Provider"] = relationship("Provider", back_populates="models")
