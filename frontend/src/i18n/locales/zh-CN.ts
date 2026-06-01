@@ -101,7 +101,7 @@ export const zhCN: DeepPartialMessageTree<typeof en> = {
       modelId: '模型 ID',
       save: '保存',
       saveSuccess: '模型设置已保存',
-      saveFailed: '保存模型设置失败',
+      modelSaveFailed: '保存模型设置失败',
       typeLlm: 'LLM',
       typeVlm: 'VLM',
       typeEmbedding: 'Embedding',

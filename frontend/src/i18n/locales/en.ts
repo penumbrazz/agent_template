@@ -101,7 +101,7 @@ export const en = {
       modelId: 'Model ID',
       save: 'Save',
       saveSuccess: 'Model settings saved',
-      saveFailed: 'Failed to save model settings',
+      modelSaveFailed: 'Failed to save model settings',
       typeLlm: 'LLM',
       typeVlm: 'VLM',
       typeEmbedding: 'Embedding',
