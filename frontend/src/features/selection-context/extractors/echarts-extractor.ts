@@ -11,7 +11,7 @@ export async function extractEchartsSelection(
 ): Promise<ChartSelectionArtifact[]> {
   return getSelectableCharts()
     .filter((chart) => intersectsSelection(chart.element, geometry))
-    .map((chart) => {
+    .flatMap((chart): ChartSelectionArtifact[] => {
       const selectedPoints = chart.getPoints().filter((point) => {
         const screenPoint = { x: point.screenX, y: point.screenY }
         return (
@@ -21,7 +21,7 @@ export async function extractEchartsSelection(
       })
 
       if (selectedPoints.length === 0) {
-        return null
+        return []
       }
 
       const seriesMap = new Map<string, typeof selectedPoints>()
@@ -44,26 +44,27 @@ export async function extractEchartsSelection(
       )
 
       const chartTestId = chart.element.dataset.testid
-      return {
-        id: `artifact-chart-${geometry.id}`,
-        kind: 'chart' as const,
-        label: translate('selection.chartLabel', {
-          title: chart.title,
-          points: String(selectedPoints.length),
-        }),
-        geometry,
-        summary: translate('selection.chartSummary', {
-          title: chart.title,
-          points: String(selectedPoints.length),
-        }),
-        chartTitle: chart.title,
-        chartTestId,
-        selectedSeries,
-        xRange: {
-          min: selectedPoints[0].x,
-          max: selectedPoints[selectedPoints.length - 1].x,
-        },
-      } satisfies ChartSelectionArtifact
+      return [
+        {
+          id: `artifact-chart-${geometry.id}`,
+          kind: 'chart' as const,
+          label: translate('selection.chartLabel', {
+            title: chart.title,
+            points: String(selectedPoints.length),
+          }),
+          geometry,
+          summary: translate('selection.chartSummary', {
+            title: chart.title,
+            points: String(selectedPoints.length),
+          }),
+          chartTitle: chart.title,
+          chartTestId,
+          selectedSeries,
+          xRange: {
+            min: selectedPoints[0].x,
+            max: selectedPoints[selectedPoints.length - 1].x,
+          },
+        } satisfies ChartSelectionArtifact,
+      ]
     })
-    .filter((artifact): artifact is ChartSelectionArtifact => Boolean(artifact))
 }

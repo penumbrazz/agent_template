@@ -38,7 +38,7 @@ describe('locale-store', () => {
     })
 
     it('falls back to default for unsupported locale', () => {
-      setLocale('fr' as any)
+      setLocale('fr' as unknown as Parameters<typeof setLocale>[0])
       expect(getLocale()).toBe(DEFAULT_LOCALE)
     })
 

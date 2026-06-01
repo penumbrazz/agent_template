@@ -40,8 +40,8 @@ export function normalizeSelectionContextPolicy(
   }
 
   return {
-    mode: candidate.mode,
-    screenshotPolicy: candidate.screenshotPolicy,
-    screenshotDelivery: candidate.screenshotDelivery,
+    mode: candidate.mode!,
+    screenshotPolicy: candidate.screenshotPolicy!,
+    screenshotDelivery: candidate.screenshotDelivery!,
   }
 }
