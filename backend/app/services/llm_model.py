@@ -52,6 +52,9 @@ def create_model(db: Session, data: ModelCreate) -> LLMModel:
         model_id=data.model_id,
         display_name=data.display_name,
         extra_config=data.extra_config,
+        model_type=data.model_type,
+        context_length=data.context_length,
+        max_output_tokens=data.max_output_tokens,
     )
     db.add(model)
     db.commit()

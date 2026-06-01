@@ -78,3 +78,47 @@ class TestModelDelete:
 
         resp = client.delete(f"/api/models/{model_id}", headers=admin_user)
         assert resp.status_code == 204
+
+
+class TestModelUpdate:
+    def test_update_metadata(self, admin_user, client):
+        provider_id = _create_provider(client, admin_user)
+        create_resp = client.post(
+            "/api/models",
+            headers=admin_user,
+            json={"provider_id": provider_id, "model_id": "gpt-4o"},
+        )
+        model_id = create_resp.json()["id"]
+
+        resp = client.put(
+            f"/api/models/{model_id}",
+            headers=admin_user,
+            json={
+                "model_type": "vlm",
+                "context_length": 128000,
+                "max_output_tokens": 16384,
+            },
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["model_type"] == "vlm"
+        assert data["context_length"] == 128000
+        assert data["max_output_tokens"] == 16384
+
+    def test_create_with_metadata(self, admin_user, client):
+        provider_id = _create_provider(client, admin_user)
+        resp = client.post(
+            "/api/models",
+            headers=admin_user,
+            json={
+                "provider_id": provider_id,
+                "model_id": "text-embedding-3-small",
+                "model_type": "embedding",
+                "context_length": 8191,
+            },
+        )
+        assert resp.status_code == 201
+        data = resp.json()
+        assert data["model_type"] == "embedding"
+        assert data["context_length"] == 8191
+        assert data["max_output_tokens"] is None
