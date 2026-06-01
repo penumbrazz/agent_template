@@ -12,7 +12,8 @@ import { Badge } from '@/components/ui/badge'
 import { ProviderFormDialog } from './provider-form-dialog'
 import { ModelFormDialog } from './model-form-dialog'
 import { TestModelDialog } from './test-model-dialog'
-import { Plus, RefreshCw, Trash2, FlaskConical, Edit } from 'lucide-react'
+import { ModelSettingsDialog } from './model-settings-dialog'
+import { Plus, RefreshCw, Trash2, FlaskConical, Edit, Settings } from 'lucide-react'
 import { useT } from '@/i18n'
 import { useApiAction } from '@/hooks/use-api-action'
 import { cn } from '@/lib/utils'
@@ -32,6 +33,8 @@ export function ModelConfig() {
   const [editingProvider, setEditingProvider] = useState<Provider | null>(null)
   const [modelDialogOpen, setModelDialogOpen] = useState(false)
   const [testDialogOpen, setTestDialogOpen] = useState(false)
+  const [settingsDialogOpen, setSettingsDialogOpen] = useState(false)
+  const [editingModel, setEditingModel] = useState<LLMModel | null>(null)
   const t = useT()
   const { execute } = useApiAction()
 
@@ -267,15 +270,33 @@ export function ModelConfig() {
                     )}
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 text-text-muted hover:text-error"
-                  onClick={() => handleDeleteModel(m.id)}
-                  data-testid={`delete-model-${m.id}`}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setEditingModel(m)
+                      setSettingsDialogOpen(true)
+                    }}
+                    data-testid={`settings-model-${m.id}`}
+                  >
+                    <Settings className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-text-muted hover:text-error"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDeleteModel(m.id)
+                    }}
+                    data-testid={`delete-model-${m.id}`}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
@@ -299,6 +320,13 @@ export function ModelConfig() {
         onOpenChange={setTestDialogOpen}
         providerId={selectedProvider?.id ?? ''}
         models={providerModels}
+      />
+      <ModelSettingsDialog
+        key={editingModel?.id}
+        open={settingsDialogOpen}
+        onOpenChange={setSettingsDialogOpen}
+        model={editingModel}
+        onSaved={mutateModels}
       />
     </div>
   )
