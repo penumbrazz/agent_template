@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
-import type { LLMModel, ModelUpdate } from '@/types/model'
+import type { LLMModel, ModelType, ModelUpdate } from '@/types/model'
 import { useT, translate } from '@/i18n'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -43,7 +43,9 @@ export function ModelSettingsDialog({
   model,
   onSaved,
 }: ModelSettingsDialogProps) {
-  const [modelType, setModelType] = useState(model?.model_type ?? 'llm')
+  const [modelType, setModelType] = useState<ModelType>(
+    model?.model_type ?? 'llm',
+  )
   const [contextLength, setContextLength] = useState<string>(
     model?.context_length?.toString() ?? '',
   )
@@ -53,24 +55,18 @@ export function ModelSettingsDialog({
   const [loading, setLoading] = useState(false)
   const t = useT()
 
-  useEffect(() => {
-    if (model) {
-      setModelType(model.model_type)
-      setContextLength(model.context_length?.toString() ?? '')
-      setMaxOutputTokens(model.max_output_tokens?.toString() ?? '')
-    }
-  }, [model])
-
   const handleSubmit = async () => {
     if (!model) return
     setLoading(true)
     try {
       const data: ModelUpdate = {
         model_type: modelType,
-        context_length: contextLength ? parseInt(contextLength, 10) : null,
+        context_length: contextLength
+          ? parseInt(contextLength, 10)
+          : undefined,
         max_output_tokens: maxOutputTokens
           ? parseInt(maxOutputTokens, 10)
-          : null,
+          : undefined,
       }
       await modelsApi.update(model.id, data)
       toast.success(t('settings.modelConfig.saveSuccess'))
@@ -80,7 +76,7 @@ export function ModelSettingsDialog({
       const message =
         e instanceof Error
           ? e.message
-          : translate('settings.modelConfig.saveFailed')
+          : translate('settings.modelConfig.modelSaveFailed')
       toast.error(message)
     } finally {
       setLoading(false)
@@ -102,7 +98,10 @@ export function ModelSettingsDialog({
           </div>
           <div className="space-y-2">
             <Label>{t('settings.modelConfig.modelType')}</Label>
-            <Select value={modelType} onValueChange={setModelType}>
+            <Select
+              value={modelType}
+              onValueChange={(v) => setModelType(v as ModelType)}
+            >
               <SelectTrigger data-testid="model-type-select">
                 <SelectValue />
               </SelectTrigger>
