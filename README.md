@@ -2,6 +2,8 @@
 
 A full-stack AI application template with FastAPI backend, Next.js frontend, shared Python package, OpenTelemetry, Docker Compose, local development scripts, and test scaffolding.
 
+> **Disclaimer:** Despite the name "Agent Template," this project does not actually implement any Agent functionality yet. It is a well-structured full-stack template with LLM provider management, model configuration, and a chat UI — but the Agent part is left as an exercise for the user. Consider it an Agent Template without the Agent.
+
 ## Modules
 
 - `backend`: FastAPI API service
