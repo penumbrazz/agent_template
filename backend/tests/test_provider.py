@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 
 class TestProviderList:
@@ -98,7 +98,7 @@ class TestProviderDelete:
 
 
 class TestProviderFetchModels:
-    @patch("app.services.provider.httpx.Client")
+    @patch("app.services.provider.httpx.AsyncClient")
     def test_fetch_models_success(self, mock_client_cls, admin_user, client):
         create_resp = client.post(
             "/api/providers",
@@ -117,10 +117,8 @@ class TestProviderFetchModels:
             "data": [{"id": "gpt-4o"}, {"id": "gpt-4o-mini"}]
         }
         mock_resp.raise_for_status = MagicMock()
-        mock_client = MagicMock()
+        mock_client = AsyncMock()
         mock_client.get.return_value = mock_resp
-        mock_client.__enter__ = MagicMock(return_value=mock_client)
-        mock_client.__exit__ = MagicMock(return_value=False)
         mock_client_cls.return_value = mock_client
 
         resp = client.post(
@@ -130,7 +128,7 @@ class TestProviderFetchModels:
         data = resp.json()
         assert data["fetched"] == 2
 
-    @patch("app.services.provider.httpx.Client")
+    @patch("app.services.provider.httpx.AsyncClient")
     def test_fetch_models_removes_stale_models(
         self, mock_client_cls, admin_user, client
     ):
@@ -146,21 +144,19 @@ class TestProviderFetchModels:
         )
         provider_id = create_resp.json()["id"]
 
-        # First fetch: returns gpt-4o and gpt-4o-mini
+        # First fetch
         mock_resp = MagicMock()
         mock_resp.json.return_value = {
             "data": [{"id": "gpt-4o"}, {"id": "gpt-4o-mini"}]
         }
         mock_resp.raise_for_status = MagicMock()
-        mock_client = MagicMock()
+        mock_client = AsyncMock()
         mock_client.get.return_value = mock_resp
-        mock_client.__enter__ = MagicMock(return_value=mock_client)
-        mock_client.__exit__ = MagicMock(return_value=False)
         mock_client_cls.return_value = mock_client
 
         client.post(f"/api/providers/{provider_id}/fetch-models", headers=admin_user)
 
-        # Second fetch: only returns gpt-4o (simulating provider change)
+        # Second fetch: only gpt-4o
         mock_resp.json.return_value = {"data": [{"id": "gpt-4o"}]}
         resp = client.post(
             f"/api/providers/{provider_id}/fetch-models", headers=admin_user
@@ -169,13 +165,12 @@ class TestProviderFetchModels:
         data = resp.json()
         assert data["fetched"] == 0
 
-        # Verify stale model was removed
         models_resp = client.get("/api/models/all", headers=admin_user)
         model_ids = [m["model_id"] for m in models_resp.json()]
         assert "gpt-4o-mini" not in model_ids
         assert "gpt-4o" in model_ids
 
-    @patch("app.services.provider.httpx.Client")
+    @patch("app.services.provider.httpx.AsyncClient")
     def test_fetch_models_with_metadata(self, mock_client_cls, admin_user, client):
         create_resp = client.post(
             "/api/providers",
@@ -189,7 +184,6 @@ class TestProviderFetchModels:
         )
         provider_id = create_resp.json()["id"]
 
-        # Mock list response
         list_resp = MagicMock()
         list_resp.json.return_value = {
             "data": [
@@ -199,7 +193,6 @@ class TestProviderFetchModels:
         }
         list_resp.raise_for_status = MagicMock()
 
-        # Detail responses keyed by URL to handle set iteration order
         detail_map = {
             "https://api.openai.com/models/gpt-4o": {
                 "id": "gpt-4o",
@@ -223,10 +216,8 @@ class TestProviderFetchModels:
             detail_resp.raise_for_status = MagicMock()
             return detail_resp
 
-        mock_client = MagicMock()
+        mock_client = AsyncMock()
         mock_client.get.side_effect = mock_get
-        mock_client.__enter__ = MagicMock(return_value=mock_client)
-        mock_client.__exit__ = MagicMock(return_value=False)
         mock_client_cls.return_value = mock_client
 
         resp = client.post(
@@ -236,7 +227,6 @@ class TestProviderFetchModels:
         data = resp.json()
         assert data["fetched"] == 2
 
-        # Verify models have metadata
         models_resp = client.get("/api/models/all", headers=admin_user)
         models = models_resp.json()
         gpt4o = next(m for m in models if m["model_id"] == "gpt-4o")
@@ -251,7 +241,7 @@ class TestProviderFetchModels:
 
 
 class TestProviderTest:
-    @patch("app.services.provider.httpx.Client")
+    @patch("app.services.provider.httpx.AsyncClient")
     def test_connection_success(self, mock_client_cls, admin_user, client):
         create_resp = client.post(
             "/api/providers",
@@ -265,7 +255,6 @@ class TestProviderTest:
         )
         provider_id = create_resp.json()["id"]
 
-        # Create a model via API for testing
         client.post(
             "/api/models",
             headers=admin_user,
@@ -277,10 +266,8 @@ class TestProviderTest:
 
         mock_resp = MagicMock()
         mock_resp.raise_for_status = MagicMock()
-        mock_client = MagicMock()
+        mock_client = AsyncMock()
         mock_client.post.return_value = mock_resp
-        mock_client.__enter__ = MagicMock(return_value=mock_client)
-        mock_client.__exit__ = MagicMock(return_value=False)
         mock_client_cls.return_value = mock_client
 
         resp = client.post(
@@ -317,14 +304,12 @@ class TestProviderValidate:
         )
         assert resp.status_code == 403
 
-    @patch("app.services.provider.httpx.Client")
+    @patch("app.services.provider.httpx.AsyncClient")
     def test_validate_openai_success(self, mock_client_cls, admin_user, client):
         mock_resp = MagicMock()
         mock_resp.raise_for_status = MagicMock()
-        mock_client = MagicMock()
+        mock_client = AsyncMock()
         mock_client.get.return_value = mock_resp
-        mock_client.__enter__ = MagicMock(return_value=mock_client)
-        mock_client.__exit__ = MagicMock(return_value=False)
         mock_client_cls.return_value = mock_client
 
         resp = client.post(
@@ -341,12 +326,10 @@ class TestProviderValidate:
         assert data["success"] is True
         assert "latency_ms" in data
 
-    @patch("app.services.provider.httpx.Client")
+    @patch("app.services.provider.httpx.AsyncClient")
     def test_validate_connection_failure(self, mock_client_cls, admin_user, client):
-        mock_client = MagicMock()
+        mock_client = AsyncMock()
         mock_client.get.side_effect = Exception("Connection refused")
-        mock_client.__enter__ = MagicMock(return_value=mock_client)
-        mock_client.__exit__ = MagicMock(return_value=False)
         mock_client_cls.return_value = mock_client
 
         resp = client.post(

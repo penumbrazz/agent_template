@@ -28,9 +28,13 @@ app.dependency_overrides[get_db] = override_get_db
 
 @pytest.fixture(autouse=True)
 def setup_db():
+    import app.services.provider as provider_module
+
+    provider_module._async_http_client = None
     Base.metadata.create_all(bind=engine)
     limiter.reset()
     yield
+    provider_module._async_http_client = None
     Base.metadata.drop_all(bind=engine)
     limiter.reset()
 

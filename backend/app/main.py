@@ -34,6 +34,10 @@ async def lifespan(app: FastAPI):
             "langfuse_connected", host=settings.LANGFUSE_HOST
         )
     yield
+    # Shutdown: close shared async http client
+    from app.services.provider import close_http_client
+
+    await close_http_client()
     shutdown_langfuse()
 
 

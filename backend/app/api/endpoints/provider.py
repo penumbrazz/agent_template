@@ -29,12 +29,12 @@ router = APIRouter(prefix="/providers", tags=["providers"])
 
 
 @router.post("/validate")
-def validate_provider_endpoint(
+async def validate_provider_endpoint(
     data: ProviderValidateRequest,
     current_user: User = Depends(require_superuser),
 ):
     """Validate provider credentials without creating."""
-    result = validate_provider(data.base_url, data.api_key, data.provider_type.value)
+    result = await validate_provider(data.base_url, data.api_key, data.provider_type.value)
     return result
 
 
@@ -92,7 +92,7 @@ def delete_existing_provider(
 
 
 @router.post("/{provider_id}/fetch-models")
-def fetch_provider_models(
+async def fetch_provider_models(
     provider_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_superuser),
@@ -104,7 +104,7 @@ def fetch_provider_models(
             status_code=status.HTTP_404_NOT_FOUND, detail="Provider not found"
         )
     try:
-        new_models = fetch_models(db, provider)
+        new_models = await fetch_models(db, provider)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
@@ -117,7 +117,7 @@ def fetch_provider_models(
 
 
 @router.post("/{provider_id}/test")
-def test_provider_connection(
+async def test_provider_connection(
     provider_id: str,
     body: ProviderTestRequest | None = None,
     db: Session = Depends(get_db),
@@ -130,5 +130,5 @@ def test_provider_connection(
             status_code=status.HTTP_404_NOT_FOUND, detail="Provider not found"
         )
     model_id = body.model_id if body else None
-    result = test_provider(db, provider, model_id)
+    result = await test_provider(db, provider, model_id)
     return result

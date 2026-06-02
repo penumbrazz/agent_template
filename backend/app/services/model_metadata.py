@@ -22,28 +22,23 @@ def infer_model_type(model_id: str) -> str:
     return "llm"
 
 
-def fetch_model_metadata(
-    client: httpx.Client,
+async def fetch_model_metadata(
+    client: httpx.AsyncClient,
     base_url: str,
     headers: dict[str, str],
     model_id: str,
 ) -> dict[str, Any]:
-    """Fetch metadata for a single model from the remote API.
-
-    Returns a dict with keys: model_type, context_length, max_output_tokens.
-    Falls back gracefully on errors.
-    """
+    """Fetch metadata for a single model from the remote API."""
     result: dict[str, Any] = {
         "model_type": infer_model_type(model_id),
         "context_length": None,
         "max_output_tokens": None,
     }
     try:
-        resp = client.get(f"{base_url}/models/{model_id}", headers=headers)
+        resp = await client.get(f"{base_url}/models/{model_id}", headers=headers)
         resp.raise_for_status()
         data = resp.json()
 
-        # Extract context_length from various possible response fields
         meta = data.get("meta", {}) or {}
         model_info = meta.get("model_info", {}) or data
 
@@ -53,7 +48,6 @@ def fetch_model_metadata(
                 result["context_length"] = int(val)
                 break
 
-        # Extract max_output_tokens
         for field in ("max_tokens", "max_output_tokens"):
             val = model_info.get(field)
             if val is not None:

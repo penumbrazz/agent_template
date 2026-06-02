@@ -1,5 +1,5 @@
 import time
-from typing import Callable, Optional
+from typing import Awaitable, Callable, Optional
 
 import httpx
 from sqlalchemy.orm import Session
@@ -17,27 +17,27 @@ ANTHROPIC_API_VERSION = "2023-06-01"
 DEFAULT_HTTP_TIMEOUT = 30.0
 VALIDATE_HTTP_TIMEOUT = 15.0
 
-_http_client: Optional[httpx.Client] = None
+_async_http_client: Optional[httpx.AsyncClient] = None
 
 
-def _get_http_client() -> httpx.Client:
-    """Return the shared httpx client, creating one if needed."""
-    global _http_client
-    if _http_client is None or _http_client.is_closed:
-        _http_client = httpx.Client(timeout=DEFAULT_HTTP_TIMEOUT)
-    return _http_client
+def _get_async_http_client() -> httpx.AsyncClient:
+    """Return the shared async httpx client, creating one if needed."""
+    global _async_http_client
+    if _async_http_client is None or _async_http_client.is_closed:
+        _async_http_client = httpx.AsyncClient(timeout=DEFAULT_HTTP_TIMEOUT)
+    return _async_http_client
+
+
+async def close_http_client() -> None:
+    """Close the shared async httpx client on shutdown."""
+    global _async_http_client
+    if _async_http_client and not _async_http_client.is_closed:
+        await _async_http_client.aclose()
+        _async_http_client = None
 
 
 def _build_headers(api_key: str, provider_type: str) -> dict[str, str]:
-    """Build authentication headers based on the provider type.
-
-    Args:
-        api_key: The decrypted API key.
-        provider_type: The provider type string (e.g. "openai_compatible").
-
-    Returns:
-        A dict of HTTP headers for authenticating with the provider.
-    """
+    """Build authentication headers based on the provider type."""
     headers: dict[str, str] = {}
     if not api_key:
         return headers
@@ -84,18 +84,11 @@ def _models_path() -> str:
     return _MODELS_API_PATH
 
 
-def _timed_request(fn: Callable[[], None]) -> dict:
-    """Execute a callable and return a dict with success status, latency, and error.
-
-    Args:
-        fn: A zero-argument callable to execute and time.
-
-    Returns:
-        A dict containing 'success', 'latency_ms', and 'error' keys.
-    """
+async def _async_timed_request(fn: Callable[[], Awaitable[None]]) -> dict:
+    """Execute an async callable and return a dict with success status, latency, and error."""
     start = time.monotonic()
     try:
-        fn()
+        await fn()
         latency_ms = int((time.monotonic() - start) * 1000)
         return {"success": True, "latency_ms": latency_ms, "error": None}
     except Exception as e:
@@ -128,16 +121,7 @@ def create_provider(db: Session, data: ProviderCreate) -> Provider:
 
 
 def update_provider(db: Session, provider: Provider, data: ProviderUpdate) -> Provider:
-    """Update a provider's fields from partial update data.
-
-    Args:
-        db: The database session.
-        provider: The provider ORM instance to update.
-        data: Partial update payload; unset fields are ignored.
-
-    Returns:
-        The updated and refreshed Provider instance.
-    """
+    """Update a provider's fields from partial update data."""
     update_data = data.model_dump(exclude_unset=True)
     if "type" in update_data and update_data["type"] is not None:
         update_data["type"] = update_data["type"].value
@@ -160,26 +144,14 @@ def delete_provider(db: Session, provider: Provider) -> None:
     db.commit()
 
 
-def fetch_models(db: Session, provider: Provider) -> list[LLMModel]:
-    """Fetch models from a remote provider and sync with the database.
-
-    Adds newly discovered models with metadata, removes models no longer
-    available remotely, and clears the default model setting if it becomes
-    unavailable.
-
-    Args:
-        db: The database session.
-        provider: The provider whose remote models to fetch.
-
-    Returns:
-        A list of newly created LLMModel instances.
-    """
+async def fetch_models(db: Session, provider: Provider) -> list[LLMModel]:
+    """Fetch models from a remote provider and sync with the database."""
     decrypted_key = decrypt_api_key(provider.encrypted_api_key)
     base_url = _normalize_base_url(provider.base_url)
     headers = _build_headers(decrypted_key, provider.type)
 
-    client = _get_http_client()
-    resp = client.get(f"{base_url}{_models_path()}", headers=headers)
+    client = _get_async_http_client()
+    resp = await client.get(f"{base_url}{_models_path()}", headers=headers)
     resp.raise_for_status()
 
     remote_ids = set(m["id"] for m in resp.json().get("data", []))
@@ -199,7 +171,7 @@ def fetch_models(db: Session, provider: Provider) -> list[LLMModel]:
     new_ids = remote_ids - existing_ids
     new_models = []
     for mid in new_ids:
-        metadata = fetch_model_metadata(client, base_url, headers, mid)
+        metadata = await fetch_model_metadata(client, base_url, headers, mid)
         model = LLMModel(
             provider_id=provider.id,
             model_id=mid,
@@ -211,13 +183,12 @@ def fetch_models(db: Session, provider: Provider) -> list[LLMModel]:
         db.add(model)
         new_models.append(model)
 
-    # Backfill metadata for existing models missing context_length
     for model in existing_models:
         if model.model_id not in remote_ids:
             continue
         if model.context_length is not None and model.max_output_tokens is not None:
             continue
-        metadata = fetch_model_metadata(client, base_url, headers, model.model_id)
+        metadata = await fetch_model_metadata(client, base_url, headers, model.model_id)
         if model.context_length is None and metadata["context_length"] is not None:
             model.context_length = metadata["context_length"]
         if model.max_output_tokens is None and metadata["max_output_tokens"] is not None:
@@ -231,19 +202,10 @@ def fetch_models(db: Session, provider: Provider) -> list[LLMModel]:
     return new_models
 
 
-def test_provider(
+async def test_provider(
     db: Session, provider: Provider, model_id: Optional[str] = None
 ) -> dict:
-    """Test provider connectivity by sending a minimal chat completion request.
-
-    Args:
-        db: The database session.
-        provider: The provider to test.
-        model_id: Optional model ID to use; defaults to the first available model.
-
-    Returns:
-        A dict with 'success', 'latency_ms', and 'error' keys.
-    """
+    """Test provider connectivity by sending a minimal chat completion request."""
     decrypted_key = decrypt_api_key(provider.encrypted_api_key)
 
     if not model_id:
@@ -267,30 +229,29 @@ def test_provider(
         "max_tokens": 5,
     }
 
-    def make_request():
-        client = _get_http_client()
+    async def make_request():
+        client = _get_async_http_client()
         if provider.type == ProviderType.OPENAI_COMPATIBLE.value:
-            resp = client.post(
+            resp = await client.post(
                 f"{base_url}/chat/completions", headers=headers, json=chat_payload
             )
         else:
-            resp = client.post(
+            resp = await client.post(
                 f"{base_url}/messages", headers=headers, json=chat_payload
             )
         resp.raise_for_status()
 
-    return _timed_request(make_request)
+    return await _async_timed_request(make_request)
 
 
-def validate_provider(base_url: str, api_key: str, provider_type: str) -> dict:
+async def validate_provider(base_url: str, api_key: str, provider_type: str) -> dict:
     """Validate provider credentials by requesting the models endpoint."""
     url = _normalize_base_url(base_url)
     headers = _build_headers(api_key, provider_type)
 
-    def make_request():
-        client = httpx.Client(timeout=VALIDATE_HTTP_TIMEOUT)
-        resp = client.get(f"{url}{_models_path()}", headers=headers)
+    async def make_request():
+        client = _get_async_http_client()
+        resp = await client.get(f"{url}{_models_path()}", headers=headers)
         resp.raise_for_status()
-        client.close()
 
-    return _timed_request(make_request)
+    return await _async_timed_request(make_request)
