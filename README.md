@@ -1,8 +1,21 @@
 # Agent Template
 
-A full-stack AI application template with FastAPI backend, Next.js frontend, shared Python package, OpenTelemetry, Docker Compose, local development scripts, and test scaffolding.
+An Agent Template that doesn't have Agent yet — a full-stack scaffolding for building LLM-powered applications, with everything you need except the actual agent logic.
 
-> **Disclaimer:** Despite the name "Agent Template," this project does not actually implement any Agent functionality yet. It is a well-structured full-stack template with LLM provider management, model configuration, and a chat UI — but the Agent part is left as an exercise for the user. Consider it an Agent Template without the Agent.
+**What's included:**
+
+- **LLM Provider & Model Management** — Multi-provider support (OpenAI-compatible, Anthropic), auto-discovery of available models with metadata, connection testing, and credential encryption at rest
+- **Chat-Driven UI** — Multi-mode chat panel (minimized / floating / docked) with session history, message threads, and attachment support
+- **Selection Context** — Lasso any region on the page and extract structured artifacts: DOM text, table data, ECharts chart series, or screenshots. Extracted context attaches to chat messages as input for the agent
+- **Auth** — JWT authentication with HttpOnly refresh-token cookies, role-based access control
+- **Observability** — OpenTelemetry tracing, Sentry/GlitchTip error tracking, Langfuse LLM observability, all instrumented out of the box
+- **Design System** — Warm cream canvas with coral CTAs, slab-serif headlines, responsive mobile-first layout
+
+**What's NOT included:**
+
+- The actual Agent. That's your job.
+
+Built with FastAPI, Next.js 15, TypeScript, Tailwind CSS, SQLAlchemy, and Docker Compose.
 
 ## Modules
 

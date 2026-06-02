@@ -1,8 +1,21 @@
 # Agent Template
 
-全栈 AI 应用模板，包含 FastAPI 后端、Next.js 前端、共享 Python 包、OpenTelemetry、Docker Compose、本地开发脚本和测试骨架。
+一个还没有 Agent 的 Agent Template——构建 LLM 应用的全栈脚手架，除了 Agent 本身，你需要的都准备好了。
 
-> **免责声明：** 虽然名字叫"Agent Template"，但这个项目实际上还没有实现任何 Agent 功能。它是一个结构完善的全栈模板，包含 LLM 提供商管理、模型配置和聊天界面——但 Agent 部分留给了使用者自己去实现。你可以把它理解为一个没有 Agent 的 Agent 模板。
+**已包含：**
+
+- **LLM 提供商与模型管理** — 支持多提供商（OpenAI 兼容、Anthropic），自动发现可用模型及元数据，连接测试，API 密钥加密存储
+- **聊天驱动界面** — 多模式聊天面板（最小化 / 浮动 / 停靠），会话历史、消息线程、附件支持
+- **圈选上下文** — 圈选页面任意区域，提取结构化数据：DOM 文本、表格数据、ECharts 图表序列、截图。提取的上下文作为附件发送给 Agent
+- **认证系统** — JWT 认证，HttpOnly 刷新令牌 Cookie，基于角色的访问控制
+- **可观测性** — OpenTelemetry 链路追踪、Sentry/GlitchTip 错误追踪、Langfuse LLM 可观测性，开箱即用
+- **设计系统** — 温暖的奶油色画布配珊瑚色 CTA，衬线标题字体，响应式移动优先布局
+
+**不包含：**
+
+- Agent 本身。那是你的事。
+
+基于 FastAPI、Next.js 15、TypeScript、Tailwind CSS、SQLAlchemy 和 Docker Compose 构建。
 
 ## 模块
 
