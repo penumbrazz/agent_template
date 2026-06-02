@@ -211,6 +211,20 @@ def fetch_models(db: Session, provider: Provider) -> list[LLMModel]:
         db.add(model)
         new_models.append(model)
 
+    # Backfill metadata for existing models missing context_length
+    for model in existing_models:
+        if model.model_id not in remote_ids:
+            continue
+        if model.context_length is not None and model.max_output_tokens is not None:
+            continue
+        metadata = fetch_model_metadata(client, base_url, headers, model.model_id)
+        if model.context_length is None and metadata["context_length"] is not None:
+            model.context_length = metadata["context_length"]
+        if model.max_output_tokens is None and metadata["max_output_tokens"] is not None:
+            model.max_output_tokens = metadata["max_output_tokens"]
+        if model.model_type == "llm":
+            model.model_type = metadata["model_type"]
+
     db.commit()
     for m in new_models:
         db.refresh(m)

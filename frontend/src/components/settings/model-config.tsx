@@ -13,7 +13,7 @@ import { ProviderFormDialog } from './provider-form-dialog'
 import { ModelFormDialog } from './model-form-dialog'
 import { TestModelDialog } from './test-model-dialog'
 import { ModelSettingsDialog } from './model-settings-dialog'
-import { Plus, RefreshCw, Trash2, FlaskConical, Edit, Settings } from 'lucide-react'
+import { Plus, RefreshCw, Trash2, FlaskConical, Edit, SlidersHorizontal } from 'lucide-react'
 import { useT } from '@/i18n'
 import { useApiAction } from '@/hooks/use-api-action'
 import { cn } from '@/lib/utils'
@@ -282,7 +282,7 @@ export function ModelConfig() {
                     }}
                     data-testid={`settings-model-${m.id}`}
                   >
-                    <Settings className="h-3.5 w-3.5" />
+                    <SlidersHorizontal className="h-3.5 w-3.5" />
                   </Button>
                   <Button
                     variant="ghost"
