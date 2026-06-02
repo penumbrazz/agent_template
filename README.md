@@ -1,5 +1,7 @@
 # Agent Template
 
+[中文](README_zh.md)
+
 An Agent Template that doesn't have Agent yet — a full-stack scaffolding for building LLM-powered applications, with everything you need except the actual agent logic.
 
 **What's included:**

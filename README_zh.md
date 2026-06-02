@@ -1,5 +1,7 @@
 # Agent Template
 
+[English](README.md)
+
 一个还没有 Agent 的 Agent Template——构建 LLM 应用的全栈脚手架，除了 Agent 本身，你需要的都准备好了。
 
 **已包含：**
