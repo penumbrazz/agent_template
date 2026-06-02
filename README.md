@@ -13,10 +13,6 @@ An Agent Template that doesn't have Agent yet — a full-stack scaffolding for b
 - **Observability** — OpenTelemetry tracing, Sentry/GlitchTip error tracking, Langfuse LLM observability, all instrumented out of the box
 - **Design System** — Warm cream canvas with coral CTAs, slab-serif headlines, responsive mobile-first layout
 
-**What's NOT included:**
-
-- The actual Agent. That's your job.
-
 Built with FastAPI, Next.js 15, TypeScript, Tailwind CSS, SQLAlchemy, and Docker Compose.
 
 ## Modules

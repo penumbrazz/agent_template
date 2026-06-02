@@ -13,10 +13,6 @@
 - **可观测性** — OpenTelemetry 链路追踪、Sentry/GlitchTip 错误追踪、Langfuse LLM 可观测性，开箱即用
 - **设计系统** — 温暖的奶油色画布配珊瑚色 CTA，衬线标题字体，响应式移动优先布局
 
-**不包含：**
-
-- Agent 本身。那是你的事。
-
 基于 FastAPI、Next.js 15、TypeScript、Tailwind CSS、SQLAlchemy 和 Docker Compose 构建。
 
 ## 模块
