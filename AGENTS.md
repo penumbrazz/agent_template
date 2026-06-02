@@ -116,8 +116,8 @@ npm run format && npm run lint
 
 ⚠️ **实现或修改 chat 圈选引用能力时，必须遵循以下准则：**
 
-- 圈选引用默认必须使用语义上下文，截图只能作为受服务端部署配置控制的可选证据源。
-- 截图不得默认 inline 进入模型上下文；是否采集、预览、发送截图必须由服务端 policy 控制。
+- 圈选引用策略（模式、截图采集、投递方式）由 `SelectionContextPolicy` 统一管理，具体默认值以 `policy.ts` 中 `DEFAULT_SELECTION_CONTEXT_POLICY` 为准，所有策略均可通过服务端部署配置覆盖。
+- 截图投递方式默认应为 `reference_only`，避免大图 inline 进入模型上下文。
 - chat 输入区必须使用 attachment chip 承载圈选引用，不要把大段结构化上下文直接塞进 textarea。
 - 新增可圈选业务组件时，应提供稳定的 `data-selection-kind`、`data-selection-title` 和必要 metadata。
 - ECharts 图表必须注册到 selectable chart registry，通过图表实例提取 series、x/y 值和命中点位，禁止依赖截图或 OCR 推断图表数据。
