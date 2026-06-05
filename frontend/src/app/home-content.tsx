@@ -1,6 +1,7 @@
 'use client'
 
 import { SettingsPanel } from '@/components/settings/settings-panel'
+import { DemoDataSection } from '@/components/demo/demo-data-section'
 import { AgentChatPanel } from '@/features/agent-chat/agent-chat-panel'
 import { useT } from '@/i18n'
 
@@ -9,7 +10,7 @@ export function HomeContent() {
 
   return (
     <main className="min-h-screen bg-base text-text-primary">
-      <section className="mx-auto flex min-h-screen w-full max-w-5xl flex-col justify-center px-6 py-12">
+      <section className="mx-auto flex w-full max-w-5xl flex-col px-6 pt-12 pb-24">
         <p className="text-sm text-text-secondary">Agent Template</p>
         <h1 className="mt-3 text-xl font-display font-normal">
           {t('home.title')}
@@ -18,6 +19,7 @@ export function HomeContent() {
           {t('home.subtitle')}
         </p>
       </section>
+      <DemoDataSection />
       <SettingsPanel />
       <AgentChatPanel />
     </main>
