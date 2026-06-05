@@ -32,3 +32,4 @@ docs/superpowers/
 # Claude Code - local/personal config (agents & skills are shared, track those)
 .claude/settings.json
 .mcp.json
+.workbuddy/memory/
