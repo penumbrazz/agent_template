@@ -1,7 +1,3 @@
-// SPDX-FileCopyrightText: 2025 Weibo, Inc.
-//
-// SPDX-License-Identifier: Apache-2.0
-
 /**
  * Frontend OpenTelemetry Tracer
  *
@@ -20,7 +16,6 @@
  * NOTE: We use /otlp prefix instead of /api/otlp to avoid conflict with
  * the /api/* rewrite rule in next.config.js that proxies to backend.
  */
-
 import {
   CompositePropagator,
   W3CBaggagePropagator,
@@ -40,10 +35,8 @@ import { FetchInstrumentation } from '@opentelemetry/instrumentation-fetch'
 import { DocumentLoadInstrumentation } from '@opentelemetry/instrumentation-document-load'
 import { trace, SpanStatusCode, Attributes, Span } from '@opentelemetry/api'
 import { getRuntimeConfigSync } from '@/lib/runtime-config'
-
 // Track initialization state
 let isInitialized = false
-
 /**
  * Configuration options for the frontend tracer
  */
@@ -63,7 +56,6 @@ export interface FrontendTracerConfig {
   /** URL patterns to ignore from tracing (default: Next.js internal URLs) */
   ignoreUrls?: RegExp[]
 }
-
 /**
  * Default URL patterns to ignore from tracing
  * These are internal Next.js endpoints that don't need to be traced
@@ -79,7 +71,6 @@ const DEFAULT_IGNORE_URLS: RegExp[] = [
   // Quota API (no need to trace)
   /\/api\/quota/,
 ]
-
 /**
  * Default configuration
  */
@@ -95,7 +86,6 @@ const getDefaultConfig = (): Required<FrontendTracerConfig> => {
     ignoreUrls: DEFAULT_IGNORE_URLS,
   }
 }
-
 /**
  * Initialize the frontend OpenTelemetry tracer.
  *
@@ -129,38 +119,31 @@ export async function initFrontendTracer(
     console.warn('[FrontendTracer] Already initialized, skipping')
     return
   }
-
   // Check if telemetry is enabled via runtime config
   const runtimeConfig = getRuntimeConfigSync()
   if (!runtimeConfig.otelEnabled) {
     console.info('[FrontendTracer] Telemetry is disabled')
     return
   }
-
   // Merge config with defaults
   const defaultConfig = getDefaultConfig()
   const finalConfig = { ...defaultConfig, ...config }
-
   try {
     // Dynamically import ZoneContextManager to support async operations
     const { ZoneContextManager } = await import('@opentelemetry/context-zone')
-
     // Create base resource with service name
     let resource = resourceFromAttributes({
       [ATTR_SERVICE_NAME]: finalConfig.serviceName,
     })
-
     // Detect browser-specific resources (user agent, platform, etc.)
     const detectedResources = await detectResources({
       detectors: [browserDetector],
     })
     resource = resource.merge(detectedResources)
-
     // Create the OTLP exporter pointing to our proxy endpoint
     const exporter = new OTLPTraceExporter({
       url: finalConfig.otlpEndpoint,
     })
-
     // Create the tracer provider with batch processing
     const provider = new WebTracerProvider({
       resource,
@@ -170,7 +153,6 @@ export async function initFrontendTracer(
         }),
       ],
     })
-
     // Register the provider with context manager and propagators
     provider.register({
       contextManager: new ZoneContextManager(),
@@ -181,7 +163,6 @@ export async function initFrontendTracer(
         ],
       }),
     })
-
     // Build the list of instrumentations
     // NOTE: UserInteractionInstrumentation is intentionally NOT included.
     // Automatic click/submit tracking produces too much noise with unhelpful
@@ -189,7 +170,6 @@ export async function initFrontendTracer(
     // Instead, use the useTraceAction hook or traceLocalAction function
     // to manually trace meaningful user actions with proper context.
     const instrumentations = []
-
     // Fetch instrumentation
     if (finalConfig.traceFetch) {
       instrumentations.push(
@@ -208,18 +188,15 @@ export async function initFrontendTracer(
         }),
       )
     }
-
     // Document load instrumentation
     if (finalConfig.traceDocumentLoad) {
       instrumentations.push(new DocumentLoadInstrumentation())
     }
-
     // Register all instrumentations
     registerInstrumentations({
       tracerProvider: provider,
       instrumentations,
     })
-
     isInitialized = true
     console.info(
       `[FrontendTracer] Initialized successfully for service '${finalConfig.serviceName}'`,
@@ -229,7 +206,6 @@ export async function initFrontendTracer(
     throw error
   }
 }
-
 /**
  * Check if the frontend tracer has been initialized.
  *
@@ -238,10 +214,8 @@ export async function initFrontendTracer(
 export function isFrontendTracerInitialized(): boolean {
   return isInitialized
 }
-
 // Tracer name for manual spans
 const TRACER_NAME = 'agent-template-frontend-manual'
-
 /**
  * Get the tracer instance for creating manual spans.
  * Returns a tracer that can be used to create spans for local actions.
@@ -251,7 +225,6 @@ const TRACER_NAME = 'agent-template-frontend-manual'
 export function getTracer() {
   return trace.getTracer(TRACER_NAME)
 }
-
 /**
  * Trace a local action that doesn't involve network requests.
  * Use this for actions like copy to clipboard, local storage operations, etc.
@@ -280,7 +253,6 @@ export async function traceLocalAction<T>(
   if (!isInitialized) {
     return fn()
   }
-
   const tracer = getTracer()
   const span = tracer.startSpan(name, {
     attributes: {
@@ -288,7 +260,6 @@ export async function traceLocalAction<T>(
       ...attributes,
     },
   })
-
   try {
     const result = await fn()
     span.setStatus({ code: SpanStatusCode.OK })
@@ -306,7 +277,6 @@ export async function traceLocalAction<T>(
     span.end()
   }
 }
-
 /**
  * Trace a synchronous local action.
  * Use this for synchronous operations that don't involve async/await.
@@ -335,7 +305,6 @@ export function traceLocalActionSync<T>(
   if (!isInitialized) {
     return fn()
   }
-
   const tracer = getTracer()
   const span = tracer.startSpan(name, {
     attributes: {
@@ -343,7 +312,6 @@ export function traceLocalActionSync<T>(
       ...attributes,
     },
   })
-
   try {
     const result = fn()
     span.setStatus({ code: SpanStatusCode.OK })
@@ -361,7 +329,6 @@ export function traceLocalActionSync<T>(
     span.end()
   }
 }
-
 /**
  * Create a span for manual tracing with full control.
  * Use this when you need more control over the span lifecycle.
@@ -392,11 +359,9 @@ export function createSpan(
   if (!isInitialized) {
     return undefined
   }
-
   const tracer = getTracer()
   return tracer.startSpan(name, { attributes })
 }
-
 /**
  * Default export for convenience
  */

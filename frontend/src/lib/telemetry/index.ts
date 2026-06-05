@@ -1,7 +1,3 @@
-// SPDX-FileCopyrightText: 2025 Weibo, Inc.
-//
-// SPDX-License-Identifier: Apache-2.0
-
 /**
  * Frontend Telemetry Module
  *
@@ -17,7 +13,6 @@
  * }
  * ```
  */
-
 export {
   initFrontendTracer,
   isFrontendTracerInitialized,
@@ -27,5 +22,4 @@ export {
   getTracer,
   type FrontendTracerConfig,
 } from './FrontendTracer'
-
 export { default } from './FrontendTracer'

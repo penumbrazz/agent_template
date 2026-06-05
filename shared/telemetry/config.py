@@ -1,14 +1,8 @@
-# SPDX-FileCopyrightText: 2025 Weibo, Inc.
-#
-# SPDX-License-Identifier: Apache-2.0
-
 """
 OpenTelemetry configuration module.
-
 Provides centralized configuration loading from environment variables
 for all Agent Template services. This is the single source of truth for OTEL
 configuration across backend, executor, and executor_manager modules.
-
 Environment Variables:
     OTEL_ENABLED: Enable/disable OpenTelemetry (default: false)
     OTEL_SERVICE_NAME: Service name for tracing (default: agent-template-service)
@@ -28,16 +22,13 @@ Environment Variables:
         This is the industry standard approach to reduce noise from streaming endpoints like /api/chat/stream
         where each chunk would otherwise create a separate span. See OpenTelemetry ASGI instrumentation docs.
 """
-
 import os
 import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
-
 # Body size constants
 DEFAULT_MAX_BODY_SIZE = 4096  # Default max body size to capture in bytes
 MAX_BODY_SIZE_HARD_LIMIT = 1048576  # Hard limit of 1MB to prevent memory issues
-
 # Default URL patterns to exclude from tracing (health checks, docs, static assets)
 DEFAULT_EXCLUDED_URLS = [
     "/",  # Root path health check
@@ -55,17 +46,13 @@ DEFAULT_EXCLUDED_URLS = [
     "/executor-manager/sandboxes/.*/heartbeat$",
     "/executor-manager/tasks/.*/heartbeat$",
 ]
-
-
 @dataclass
 class OtelConfig:
     """
     OpenTelemetry configuration dataclass.
-
     This class holds all OTEL configuration values loaded from environment
     variables. Use get_otel_config() to get a singleton instance.
     """
-
     enabled: bool
     service_name: str
     otlp_endpoint: str
@@ -85,38 +72,28 @@ class OtelConfig:
     disable_send_receive_spans: bool = (
         True  # Disable internal http.send/http.receive spans for SSE/streaming
     )
-
-
 # Cached configuration instance
 _otel_config: Optional[OtelConfig] = None
-
-
 def get_otel_config(service_name_override: Optional[str] = None) -> OtelConfig:
     """
     Get OpenTelemetry configuration from environment variables.
-
     This function returns a cached OtelConfig instance. The configuration
     is loaded once from environment variables and reused for subsequent calls.
-
     Args:
         service_name_override: Optional service name to override the default.
                               Only used on first call when config is created.
-
     Returns:
         OtelConfig: Configuration dataclass with all OTEL settings
-
     Example:
         >>> config = get_otel_config("agent-template-backend")
         >>> if config.enabled:
         ...     init_telemetry(config)
     """
     global _otel_config
-
     if _otel_config is None:
         default_service_name = service_name_override or os.getenv(
             "OTEL_SERVICE_NAME", "agent-template-service"
         )
-
         # Parse excluded URLs from environment variable
         excluded_urls_env = os.getenv("OTEL_EXCLUDED_URLS", "")
         if excluded_urls_env:
@@ -126,13 +103,11 @@ def get_otel_config(service_name_override: Optional[str] = None) -> OtelConfig:
         else:
             # Use default excluded URLs if not specified
             excluded_urls = DEFAULT_EXCLUDED_URLS.copy()
-
         # Parse included URLs from environment variable (whitelist mode)
         included_urls_env = os.getenv("OTEL_INCLUDED_URLS", "")
         included_urls = [
             url.strip() for url in included_urls_env.split(",") if url.strip()
         ]
-
         _otel_config = OtelConfig(
             enabled=os.getenv("OTEL_ENABLED", "false").lower() == "true",
             service_name=default_service_name,
@@ -169,17 +144,12 @@ def get_otel_config(service_name_override: Optional[str] = None) -> OtelConfig:
             ).lower()
             == "true",
         )
-
     return _otel_config
-
-
 def get_otel_config_from_env() -> Dict[str, Any]:
     """
     Get OpenTelemetry configuration from environment variables as a dictionary.
-
     This is a legacy function for backward compatibility. New code should
     use get_otel_config() which returns a typed OtelConfig dataclass.
-
     Returns:
         dict: Configuration dictionary with keys:
             - enabled: bool
@@ -196,8 +166,6 @@ def get_otel_config_from_env() -> Dict[str, Any]:
         "sampler_ratio": config.sampler_ratio,
         "metrics_enabled": config.metrics_enabled,
     }
-
-
 # Global HTTP capture settings
 _http_capture_settings: Dict[str, Any] = {
     "capture_request_headers": False,
@@ -206,18 +174,13 @@ _http_capture_settings: Dict[str, Any] = {
     "capture_response_body": False,
     "max_body_size": DEFAULT_MAX_BODY_SIZE,
 }
-
-
 def get_http_capture_settings() -> Dict[str, Any]:
     """
     Get the current HTTP capture settings.
-
     Returns:
         dict: HTTP capture settings dictionary
     """
     return _http_capture_settings.copy()
-
-
 def set_http_capture_settings(
     capture_request_headers: bool = False,
     capture_request_body: bool = False,
@@ -227,7 +190,6 @@ def set_http_capture_settings(
 ) -> None:
     """
     Set HTTP capture settings globally.
-
     Args:
         capture_request_headers: Whether to capture HTTP request headers
         capture_request_body: Whether to capture HTTP request body
@@ -241,39 +203,29 @@ def set_http_capture_settings(
     _http_capture_settings["capture_response_headers"] = capture_response_headers
     _http_capture_settings["capture_response_body"] = capture_response_body
     _http_capture_settings["max_body_size"] = max_body_size
-
-
 def reset_otel_config() -> None:
     """
     Reset the cached OTEL configuration.
-
     This is primarily useful for testing purposes where you need to
     reload configuration with different environment variables.
     """
     global _otel_config
     _otel_config = None
-
-
 def should_trace_url(url: str, config: Optional[OtelConfig] = None) -> bool:
     """
     Check if a URL should be traced based on include/exclude patterns.
-
     The logic is:
     1. If included_urls is set (whitelist mode), only trace URLs matching those patterns
     2. Otherwise, trace all URLs except those matching excluded_urls (blacklist mode)
-
     Patterns support:
     - Exact match: "/api/health"
     - Prefix match with wildcard: "/api/*" matches "/api/users", "/api/tasks", etc.
     - Regex patterns: "^/api/v[0-9]+/.*" (must start with ^)
-
     Args:
         url: The URL path to check (e.g., "/api/users/123")
         config: Optional OtelConfig instance. If not provided, uses get_otel_config()
-
     Returns:
         bool: True if the URL should be traced, False if it should be excluded
-
     Example:
         >>> should_trace_url("/api/users")  # True (not in default excluded list)
         >>> should_trace_url("/health")     # False (in default excluded list)
@@ -281,27 +233,20 @@ def should_trace_url(url: str, config: Optional[OtelConfig] = None) -> bool:
     """
     if config is None:
         config = get_otel_config()
-
     # Whitelist mode: if included_urls is set, only trace matching URLs
     if config.included_urls:
         return _url_matches_patterns(url, config.included_urls)
-
     # Blacklist mode: trace all URLs except those in excluded_urls
     if config.excluded_urls:
         return not _url_matches_patterns(url, config.excluded_urls)
-
     # No filters configured, trace everything
     return True
-
-
 def _url_matches_patterns(url: str, patterns: List[str]) -> bool:
     """
     Check if a URL matches any of the given patterns.
-
     Args:
         url: The URL path to check
         patterns: List of patterns to match against
-
     Returns:
         bool: True if URL matches any pattern
     """
@@ -309,21 +254,16 @@ def _url_matches_patterns(url: str, patterns: List[str]) -> bool:
         if _url_matches_pattern(url, pattern):
             return True
     return False
-
-
 def _url_matches_pattern(url: str, pattern: str) -> bool:
     """
     Check if a URL matches a single pattern.
-
     Supports:
     - Exact match: "/api/health"
     - Prefix match with wildcard: "/api/*" matches "/api/users"
     - Regex patterns: "^/api/v[0-9]+/.*" (must start with ^)
-
     Args:
         url: The URL path to check
         pattern: The pattern to match against
-
     Returns:
         bool: True if URL matches the pattern
     """
@@ -333,29 +273,21 @@ def _url_matches_pattern(url: str, pattern: str) -> bool:
             return bool(re.match(pattern, url))
         except re.error:
             return False
-
     # Wildcard pattern (ends with *)
     if pattern.endswith("*"):
         prefix = pattern[:-1]
         return url.startswith(prefix)
-
     # Exact match
     return url == pattern
-
-
 def get_excluded_urls_regex() -> str:
     """
     Get excluded URLs as a comma-separated string for FastAPI instrumentation.
-
     This is useful for passing to FastAPIInstrumentor's excluded_urls parameter.
-
     Note: FastAPIInstrumentor expects a comma-separated string of regex patterns,
     not a single combined regex. Each pattern is matched independently using re.search()
     against the FULL URL (e.g., "http://localhost:8000/health"), not just the path.
-
     Returns:
         str: Comma-separated regex patterns for excluded URLs
-
     Example:
         >>> get_excluded_urls_regex()
         '.*/$, .*/health$, .*/healthz$, .*/ready$, .*/metrics$, .*/api/docs$, .*/api/openapi\\.json$, .*/api/quota/.*, .*/favicon\\.ico$, .*/executor-manager/sandboxes/.*/heartbeat$, .*/executor-manager/tasks/.*/heartbeat$'
@@ -363,7 +295,6 @@ def get_excluded_urls_regex() -> str:
     config = get_otel_config()
     if not config.excluded_urls:
         return ""
-
     # Convert patterns to regex format suitable for FastAPIInstrumentor
     # FastAPIInstrumentor expects comma-separated patterns, not | separated
     # Note: OpenTelemetry's ExcludeList.url_disabled() matches against FULL URL
@@ -389,5 +320,4 @@ def get_excluded_urls_regex() -> str:
         else:
             # Exact match: /health -> .*/health$
             regex_patterns.append(f".*{pattern}$")
-
     return ",".join(regex_patterns)

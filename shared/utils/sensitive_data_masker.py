@@ -1,10 +1,5 @@
-# SPDX-FileCopyrightText: 2025 Weibo, Inc.
-#
-# SPDX-License-Identifier: Apache-2.0
-
 """
 Sensitive data masking utility for protecting confidential information in logs and API responses.
-
 This module provides functionality to detect and mask sensitive data such as:
 - API keys and tokens (GitHub, GitLab, Anthropic, etc.)
 - Passwords and secrets
@@ -12,14 +7,10 @@ This module provides functionality to detect and mask sensitive data such as:
 - JWT tokens
 - Environment variable values containing sensitive data
 """
-
 import re
 from typing import Any, Dict, List, Optional, Union
-
-
 class SensitiveDataMasker:
     """Utility class for masking sensitive information in strings and data structures."""
-
     # Patterns for detecting sensitive data
     SENSITIVE_PATTERNS = [
         # API Keys and Tokens
@@ -61,7 +52,6 @@ class SensitiveDataMasker:
             "PRIVATE_KEY",
         ),
     ]
-
     # Environment variable patterns that contain sensitive data
     # Using more specific patterns to avoid false positives
     SENSITIVE_ENV_VARS = [
@@ -85,7 +75,6 @@ class SensitiveDataMasker:
         "AES_IV",
         "ENCRYPTION",
     ]
-
     # Non-sensitive patterns that should be excluded even if they match above
     NON_SENSITIVE_PATTERNS = [
         "_HOST",
@@ -98,13 +87,11 @@ class SensitiveDataMasker:
         "PORT_",
         "_URL",
     ]
-
     def __init__(
         self, mask_char: str = "*", show_prefix_len: int = 4, show_suffix_len: int = 4
     ):
         """
         Initialize the masker with customizable masking behavior.
-
         Args:
             mask_char: Character to use for masking (default: '*')
             show_prefix_len: Number of characters to show at the beginning (default: 4)
@@ -113,54 +100,41 @@ class SensitiveDataMasker:
         self.mask_char = mask_char
         self.show_prefix_len = show_prefix_len
         self.show_suffix_len = show_suffix_len
-
         # Compile regex patterns for better performance
         self.compiled_patterns = [
             (re.compile(pattern, re.IGNORECASE | re.MULTILINE), label)
             for pattern, label in self.SENSITIVE_PATTERNS
         ]
-
     def _mask_value(self, value: str, min_length: int = 8) -> str:
         """
         Mask a sensitive value, showing only prefix and suffix.
-
         Args:
             value: The value to mask
             min_length: Minimum length to apply masking (default: 8)
-
         Returns:
             Masked value string
         """
         if len(value) < min_length:
             return self.mask_char * len(value)
-
         if len(value) <= (self.show_prefix_len + self.show_suffix_len):
             return self.mask_char * len(value)
-
         prefix = value[: self.show_prefix_len]
         suffix = value[-self.show_suffix_len :]
         masked_middle = self.mask_char * 12  # Fixed length for consistency
-
         return f"{prefix}{masked_middle}{suffix}"
-
     def mask_string(self, text: str) -> str:
         """
         Mask sensitive data in a string.
-
         Args:
             text: Input text that may contain sensitive data
-
         Returns:
             Text with sensitive data masked
         """
         if not text or not isinstance(text, str):
             return text
-
         masked_text = text
-
         # Apply all patterns
         for pattern, label in self.compiled_patterns:
-
             def replace_match(match):
                 # Handle different group patterns
                 if len(match.groups()) == 1:
@@ -179,23 +153,16 @@ class SensitiveDataMasker:
                     masked_value = self._mask_value(sensitive_value)
                     suffix = match.group(3) if match.group(3) else ""
                     return f"{prefix}{masked_value}{suffix}"
-
                 return match.group(0)
-
             masked_text = pattern.sub(replace_match, masked_text)
-
         # Special handling for export statements with sensitive vars
         masked_text = self._mask_export_statements(masked_text)
-
         return masked_text
-
     def _mask_export_statements(self, text: str) -> str:
         """
         Mask values in export statements that contain sensitive environment variables.
-
         Args:
             text: Input text
-
         Returns:
             Text with export values masked
         """
@@ -204,7 +171,6 @@ class SensitiveDataMasker:
             r'(export\s+)([A-Z_][A-Z0-9_]*)(=)(["\']?)([^"\'\s]+)(["\']?)',
             re.IGNORECASE,
         )
-
         def replace_export(match):
             keyword = match.group(1)  # "export "
             var_name = match.group(2)  # Variable name
@@ -212,55 +178,43 @@ class SensitiveDataMasker:
             quote_start = match.group(4)  # Opening quote
             value = match.group(5)  # Value
             quote_end = match.group(6)  # Closing quote
-
             # First check if it matches non-sensitive patterns (should be excluded)
             is_non_sensitive = any(
                 non_sensitive_pattern in var_name.upper()
                 for non_sensitive_pattern in self.NON_SENSITIVE_PATTERNS
             )
-
             if is_non_sensitive:
                 return match.group(0)
-
             # Check if this is a sensitive environment variable
             is_sensitive = any(
                 sensitive_keyword in var_name.upper()
                 for sensitive_keyword in self.SENSITIVE_ENV_VARS
             )
-
             if is_sensitive:
                 masked_value = self._mask_value(value)
                 return (
                     f"{keyword}{var_name}{equals}{quote_start}{masked_value}{quote_end}"
                 )
-
             return match.group(0)
-
         return export_pattern.sub(replace_export, text)
-
     def mask_dict(self, data: Dict[str, Any], recursive: bool = True) -> Dict[str, Any]:
         """
         Mask sensitive data in a dictionary.
-
         Args:
             data: Dictionary that may contain sensitive data
             recursive: Whether to recursively mask nested dictionaries
-
         Returns:
             Dictionary with sensitive data masked
         """
         if not isinstance(data, dict):
             return data
-
         masked_data = {}
-
         for key, value in data.items():
             # First check if it matches non-sensitive patterns (should be excluded)
             is_non_sensitive = any(
                 non_sensitive_pattern in key.upper()
                 for non_sensitive_pattern in self.NON_SENSITIVE_PATTERNS
             )
-
             # Check if key name suggests sensitive data
             is_sensitive_key = (
                 any(
@@ -269,7 +223,6 @@ class SensitiveDataMasker:
                 )
                 and not is_non_sensitive
             )
-
             if is_sensitive_key and isinstance(value, str):
                 masked_data[key] = self._mask_value(value)
             elif isinstance(value, str):
@@ -280,25 +233,19 @@ class SensitiveDataMasker:
                 masked_data[key] = self.mask_list(value, recursive=True)
             else:
                 masked_data[key] = value
-
         return masked_data
-
     def mask_list(self, data: List[Any], recursive: bool = True) -> List[Any]:
         """
         Mask sensitive data in a list.
-
         Args:
             data: List that may contain sensitive data
             recursive: Whether to recursively mask nested structures
-
         Returns:
             List with sensitive data masked
         """
         if not isinstance(data, (list, tuple)):
             return data
-
         masked_list = []
-
         for item in data:
             if isinstance(item, str):
                 masked_list.append(self.mask_string(item))
@@ -308,17 +255,13 @@ class SensitiveDataMasker:
                 masked_list.append(self.mask_list(item, recursive=True))
             else:
                 masked_list.append(item)
-
         return masked_list
-
     def mask_any(self, data: Any, recursive: bool = True) -> Any:
         """
         Automatically detect and mask sensitive data in any data type.
-
         Args:
             data: Data that may contain sensitive information
             recursive: Whether to recursively mask nested structures
-
         Returns:
             Data with sensitive information masked
         """
@@ -330,33 +273,23 @@ class SensitiveDataMasker:
             return self.mask_list(data, recursive=recursive)
         else:
             return data
-
-
 # Global singleton instance
 _default_masker = SensitiveDataMasker()
-
-
 def mask_sensitive_data(data: Any, recursive: bool = True) -> Any:
     """
     Convenience function to mask sensitive data using the default masker.
-
     Args:
         data: Data that may contain sensitive information
         recursive: Whether to recursively mask nested structures
-
     Returns:
         Data with sensitive information masked
     """
     return _default_masker.mask_any(data, recursive=recursive)
-
-
 def mask_string(text: str) -> str:
     """
     Convenience function to mask sensitive data in a string.
-
     Args:
         text: Text that may contain sensitive data
-
     Returns:
         Text with sensitive data masked
     """

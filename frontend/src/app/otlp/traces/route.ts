@@ -1,7 +1,3 @@
-// SPDX-FileCopyrightText: 2025 Weibo, Inc.
-//
-// SPDX-License-Identifier: Apache-2.0
-
 /**
  * OTLP Traces Proxy API Route
  *
@@ -15,17 +11,14 @@
  * conflict with the /api/* rewrite rule in next.config.js that
  * proxies all /api/* requests to the backend.
  */
-
 import { NextRequest, NextResponse } from 'next/server'
 import { getRuntimeConfigSync } from '@/lib/runtime-config'
-
 /**
  * Get OTEL Collector endpoint from runtime config
  */
 const getOtelCollectorEndpoint = (): string => {
   return getRuntimeConfigSync().otelCollectorEndpoint
 }
-
 /**
  * POST /otlp/traces
  *
@@ -44,18 +37,14 @@ export async function POST(request: NextRequest): Promise<Response> {
       { status: 200 },
     )
   }
-
   try {
     // Get the raw body as ArrayBuffer to preserve binary data (protobuf)
     const body = await request.arrayBuffer()
-
     // Preserve the content type from the original request
     const contentType =
       request.headers.get('content-type') || 'application/json'
-
     // Get OTEL Collector endpoint from runtime config
     const collectorEndpoint = getOtelCollectorEndpoint()
-
     // Forward the request to OTEL Collector
     const response = await fetch(`${collectorEndpoint}/v1/traces`, {
       method: 'POST',
@@ -64,7 +53,6 @@ export async function POST(request: NextRequest): Promise<Response> {
       },
       body: body,
     })
-
     if (!response.ok) {
       const errorText = await response.text()
       console.error(
@@ -75,13 +63,11 @@ export async function POST(request: NextRequest): Promise<Response> {
         { status: response.status },
       )
     }
-
     // Return success
     return NextResponse.json({ success: true }, { status: 200 })
   } catch (error) {
     // Log the error but don't expose internal details
     console.error('[OTLP Proxy] Error forwarding traces:', error)
-
     // Return a generic error response
     return NextResponse.json(
       { error: 'Internal server error' },
@@ -89,7 +75,6 @@ export async function POST(request: NextRequest): Promise<Response> {
     )
   }
 }
-
 /**
  * OPTIONS /otlp/traces
  *

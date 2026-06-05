@@ -1,13 +1,7 @@
-# SPDX-FileCopyrightText: 2025 Weibo, Inc.
-#
-# SPDX-License-Identifier: Apache-2.0
-
 """
 OpenTelemetry metrics module for Agent Template services.
-
 Provides pre-defined business metrics and decorators for automatic metric collection.
 """
-
 # Business metrics
 from shared.telemetry.metrics.business import (
     AgentTemplateMetrics,
@@ -21,10 +15,8 @@ from shared.telemetry.metrics.business import (
     record_task_failed,
     record_user_activity,
 )
-
 # Metric tracking decorators
 from shared.telemetry.metrics.decorators import track_duration, track_metric
-
 __all__ = [
     # Business metrics
     "AgentTemplateMetrics",

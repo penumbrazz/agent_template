@@ -1,65 +1,46 @@
-# SPDX-FileCopyrightText: 2025 Weibo, Inc.
-#
-# SPDX-License-Identifier: Apache-2.0
-
 """
 OpenTelemetry core initialization module.
-
 Provides the main entry point for initializing and managing
 OpenTelemetry tracing and metrics.
-
 NOTE: OpenTelemetry imports are lazy-loaded to reduce memory usage
 when telemetry is disabled (e.g., in standalone mode).
 """
-
 import logging
 import os
 from typing import TYPE_CHECKING, Any, Optional
-
 # Type hints only - not imported at runtime
 if TYPE_CHECKING:
     from opentelemetry.metrics import Meter
     from opentelemetry.trace import Tracer
-
 logger = logging.getLogger(__name__)
-
 # Global state for telemetry
 _telemetry_initialized = False
 _telemetry_enabled = False
-
-
 def _build_resource(
     service_name: str,
     service_version: str,
     deployment_environment: Optional[str],
 ) -> "Resource":
     """Create an OpenTelemetry Resource with service attributes.
-
     Args:
         service_name: Name of the service.
         service_version: Version of the service.
         deployment_environment: Deployment environment override.
-
     Returns:
         Configured Resource instance.
     """
     from opentelemetry.sdk.resources import Resource
-
     resource_attributes = {
         "service.name": service_name,
         "service.version": service_version,
     }
-
     if deployment_environment:
         resource_attributes["deployment.environment"] = deployment_environment
     else:
         # Try to get from environment
         env = os.getenv("ENVIRONMENT", os.getenv("ENV", "development"))
         resource_attributes["deployment.environment"] = env
-
     return Resource.create(resource_attributes)
-
-
 def _log_http_capture_settings(
     capture_request_headers: bool,
     capture_request_body: bool,
@@ -68,7 +49,6 @@ def _log_http_capture_settings(
     max_body_size: int,
 ) -> None:
     """Log the HTTP capture configuration summary.
-
     Args:
         capture_request_headers: Whether request headers are captured.
         capture_request_body: Whether request bodies are captured.
@@ -85,11 +65,8 @@ def _log_http_capture_settings(
         http_capture_info.append("response_headers")
     if capture_response_body:
         http_capture_info.append("response_body")
-
     capture_str = ", ".join(http_capture_info) if http_capture_info else "none"
     logger.info(f"HTTP capture: [{capture_str}], max_body_size: {max_body_size} bytes")
-
-
 def init_telemetry(
     service_name: str,
     enabled: bool = True,
@@ -106,7 +83,6 @@ def init_telemetry(
 ) -> bool:
     """
     Initialize OpenTelemetry with tracing and optional metrics support.
-
     Args:
         service_name: Name of the service (e.g., "agent-template-backend")
         enabled: Whether to enable telemetry (default: True)
@@ -120,19 +96,15 @@ def init_telemetry(
         capture_response_headers: Whether to capture HTTP response headers (default: False)
         capture_response_body: Whether to capture HTTP response body (default: False)
         max_body_size: Maximum body size to capture in bytes (default: 4096)
-
     Returns:
         bool: True if initialization was successful, False otherwise
     """
     global _telemetry_initialized, _telemetry_enabled
-
     if _telemetry_initialized:
         logger.warning("Telemetry already initialized, skipping re-initialization")
         return _telemetry_enabled
-
     # Lazy import config module
     from shared.telemetry.config import set_http_capture_settings
-
     # Store HTTP capture settings globally
     set_http_capture_settings(
         capture_request_headers=capture_request_headers,
@@ -141,37 +113,30 @@ def init_telemetry(
         capture_response_body=capture_response_body,
         max_body_size=max_body_size,
     )
-
     if not enabled:
         logger.info("OpenTelemetry is disabled, skipping initialization")
         _telemetry_initialized = True
         _telemetry_enabled = False
         return False
-
     try:
         # Lazy import OpenTelemetry modules only when enabled
         from shared.telemetry.providers import (
             init_meter_provider,
             init_tracer_provider,
         )
-
         resource = _build_resource(
             service_name, service_version, deployment_environment
         )
-
         # Initialize TracerProvider (always enabled when telemetry is enabled)
         init_tracer_provider(resource, otlp_endpoint, sampler_ratio)
-
         # Initialize MeterProvider only if metrics are enabled
         if metrics_enabled:
             init_meter_provider(resource, otlp_endpoint)
             logger.info("OpenTelemetry metrics export enabled")
         else:
             logger.info("OpenTelemetry metrics export disabled")
-
         _telemetry_initialized = True
         _telemetry_enabled = True
-
         logger.info(
             f"OpenTelemetry initialized successfully for service '{service_name}' "
             f"with endpoint '{otlp_endpoint}', sampler ratio {sampler_ratio}"
@@ -183,30 +148,23 @@ def init_telemetry(
             capture_response_body,
             max_body_size,
         )
-
         return True
-
     except Exception as e:
         logger.error(f"Failed to initialize OpenTelemetry: {e}")
         _telemetry_initialized = True
         _telemetry_enabled = False
         return False
-
-
 def shutdown_telemetry() -> None:
     """
     Gracefully shutdown telemetry providers.
     Should be called during application shutdown.
     """
     global _telemetry_initialized, _telemetry_enabled
-
     if not _telemetry_enabled:
         return
-
     try:
         # Lazy import only when needed
         from shared.telemetry.providers import shutdown_providers
-
         shutdown_providers()
         logger.info("OpenTelemetry shutdown completed")
     except Exception as e:
@@ -214,45 +172,32 @@ def shutdown_telemetry() -> None:
     finally:
         _telemetry_initialized = False
         _telemetry_enabled = False
-
-
 def is_telemetry_enabled() -> bool:
     """
     Check if telemetry is enabled and initialized.
-
     Returns:
         bool: True if telemetry is enabled, False otherwise
     """
     return _telemetry_enabled
-
-
 def get_tracer(name: str) -> "Tracer":
     """
     Get a Tracer instance for creating spans.
-
     Args:
         name: Name of the tracer (typically module name)
-
     Returns:
         Tracer: OpenTelemetry Tracer instance
     """
     # Lazy import
     from opentelemetry import trace
-
     return trace.get_tracer(name)
-
-
 def get_meter(name: str) -> "Meter":
     """
     Get a Meter instance for creating metrics.
-
     Args:
         name: Name of the meter (typically module name)
-
     Returns:
         Meter: OpenTelemetry Meter instance
     """
     # Lazy import
     from opentelemetry import metrics
-
     return metrics.get_meter(name)
