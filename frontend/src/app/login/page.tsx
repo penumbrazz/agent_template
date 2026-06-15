@@ -95,7 +95,7 @@ export default function LoginPage() {
             type="submit"
             data-testid="login-submit-button"
             disabled={submitting}
-            className="mt-6 flex h-10 w-full items-center justify-center rounded-md bg-primary text-sm font-medium text-white transition-colors hover:bg-primary-active disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-6 flex h-10 w-full items-center justify-center rounded-md bg-primary text-sm font-medium text-on-primary transition-colors hover:bg-primary-active disabled:cursor-not-allowed disabled:opacity-50"
           >
             {submitting ? t('auth.loginLoading') : t('auth.login')}
           </button>

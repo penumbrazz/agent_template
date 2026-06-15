@@ -19,11 +19,16 @@ Usage:
     with traced_sync_client(timeout=10.0) as client:
         response = client.post(url, json=data)
 """
+
 import logging
 from typing import Optional
+
 import httpx
 import requests
+
 logger = logging.getLogger(__name__)
+
+
 def _inject_trace_headers(headers: dict) -> dict:
     """Inject W3C trace context and X-Request-ID into headers dict.
     Safe to call even when OTEL is not enabled — will simply be a no-op.
@@ -33,6 +38,7 @@ def _inject_trace_headers(headers: dict) -> dict:
             get_request_id,
             inject_trace_context_to_headers,
         )
+
         headers = inject_trace_context_to_headers(headers)
         request_id = get_request_id()
         if request_id:
@@ -40,19 +46,26 @@ def _inject_trace_headers(headers: dict) -> dict:
     except Exception as e:
         logger.debug(f"Failed to inject trace context headers: {e}")
     return headers
+
+
 # ---------------------------------------------------------------------------
 # requests.Session with automatic trace context injection
 # ---------------------------------------------------------------------------
 class TracedSession(requests.Session):
     """A requests.Session subclass that auto-injects trace context headers."""
+
     def request(self, method, url, **kwargs):
         headers = dict(kwargs.pop("headers", None) or {})
         headers = _inject_trace_headers(headers)
         kwargs["headers"] = headers
         return super().request(method, url, **kwargs)
+
+
 def traced_session() -> TracedSession:
     """Create a new requests session with automatic trace context injection."""
     return TracedSession()
+
+
 # ---------------------------------------------------------------------------
 # httpx clients with automatic trace context injection
 # ---------------------------------------------------------------------------
@@ -63,11 +76,15 @@ def _httpx_request_hook(request: httpx.Request) -> None:
     for key, value in headers.items():
         if key not in request.headers:
             request.headers[key] = value
+
+
 async def _async_httpx_request_hook(request: httpx.Request) -> None:
     """Event hook that injects trace context into every httpx request (async).
     httpx.AsyncClient requires event hooks to be async functions.
     """
     _httpx_request_hook(request)
+
+
 def traced_async_client(timeout: Optional[float] = None, **kwargs) -> httpx.AsyncClient:
     """Create an httpx.AsyncClient with automatic trace context injection.
     Args:
@@ -82,6 +99,8 @@ def traced_async_client(timeout: Optional[float] = None, **kwargs) -> httpx.Asyn
     if timeout is not None:
         kwargs["timeout"] = timeout
     return httpx.AsyncClient(event_hooks=event_hooks, **kwargs)
+
+
 def traced_sync_client(timeout: Optional[float] = None, **kwargs) -> httpx.Client:
     """Create an httpx.Client with automatic trace context injection.
     Args:

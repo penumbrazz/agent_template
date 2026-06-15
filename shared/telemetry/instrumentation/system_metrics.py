@@ -1,11 +1,15 @@
 """System metrics OpenTelemetry instrumentation."""
+
 import logging
+
+
 def _setup_system_metrics_instrumentation(logger: logging.Logger) -> None:
     """Setup system metrics instrumentation for CPU, memory, etc."""
     try:
         from opentelemetry.instrumentation.system_metrics import (
             SystemMetricsInstrumentor,
         )
+
         SystemMetricsInstrumentor().instrument()
         logger.info("✓ System metrics instrumentation enabled")
     except ImportError:

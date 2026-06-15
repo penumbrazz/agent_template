@@ -3,8 +3,11 @@ Standardized event and span names for OpenTelemetry tracking.
 This module provides centralized constants for event names and span names
 used across all services for consistent observability.
 """
+
+
 class TelemetryEventNames:
     """Standardized event names for OpenTelemetry tracking (success and errors)."""
+
     # Error events
     AGENT_PROFILE_NOT_FOUND = "AgentProfileNotFound"
     WORKFLOW_NOT_FOUND = "WorkflowNotFound"
@@ -18,8 +21,11 @@ class TelemetryEventNames:
     # Success events
     STREAM_COMPLETED = "StreamCompleted"
     MODEL_REQUEST_SUCCESS = "ModelRequestSuccess"
+
+
 class SpanNames:
     """Standardized span names for common operations."""
+
     # Chat operations
     CHAT_STREAM_RESPONSE = "chat.stream_response"
     CHAT_STREAM_TOKENS = "chat.stream_tokens"

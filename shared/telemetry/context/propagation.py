@@ -3,15 +3,20 @@ Trace context propagation utilities for OpenTelemetry.
 Provides functions for propagating trace context across service boundaries,
 including HTTP headers and environment variables for Docker containers.
 """
+
 import logging
 import os
 from typing import Dict, Optional
+
 from opentelemetry import context, trace
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
+
 logger = logging.getLogger(__name__)
 # Environment variable names for trace context propagation
 TRACE_PARENT_ENV = "OTEL_TRACEPARENT"
 TRACE_STATE_ENV = "OTEL_TRACESTATE"
+
+
 def get_trace_context_for_propagation() -> Dict[str, str]:
     """
     Extract current trace context as a dictionary for propagation.
@@ -54,6 +59,8 @@ def get_trace_context_for_propagation() -> Dict[str, str]:
     except Exception as e:
         logger.debug(f"Failed to extract trace context for propagation: {e}")
     return context_dict
+
+
 def get_trace_context_env_vars() -> Dict[str, str]:
     """
     Get trace context as environment variables for Docker container propagation.
@@ -70,6 +77,8 @@ def get_trace_context_env_vars() -> Dict[str, str]:
     except Exception as e:
         logger.debug(f"Failed to get trace context env vars: {e}")
     return env_vars
+
+
 def restore_trace_context_from_env() -> None:
     """
     Restore trace context from environment variables.
@@ -96,6 +105,8 @@ def restore_trace_context_from_env() -> None:
         logger.debug(f"Restored trace context from env: traceparent={traceparent}")
     except Exception as e:
         logger.debug(f"Failed to restore trace context from env: {e}")
+
+
 def inject_trace_context_to_headers(
     headers: Optional[Dict[str, str]] = None,
 ) -> Dict[str, str]:
@@ -115,6 +126,8 @@ def inject_trace_context_to_headers(
     except Exception as e:
         logger.debug(f"Failed to inject trace context to headers: {e}")
     return headers
+
+
 def extract_trace_context_from_headers(
     headers: Dict[str, str],
 ) -> Optional[context.Context]:

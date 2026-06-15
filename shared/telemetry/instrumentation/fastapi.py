@@ -1,7 +1,11 @@
 """FastAPI OpenTelemetry instrumentation."""
+
 import logging
 from typing import Any
+
 from shared.telemetry.config import DEFAULT_MAX_BODY_SIZE
+
+
 def _build_fastapi_hooks(capture_settings: dict, logger: logging.Logger) -> dict:
     """Build request/response hooks for FastAPI instrumentation.
     Args:
@@ -26,6 +30,8 @@ def _build_fastapi_hooks(capture_settings: dict, logger: logging.Logger) -> dict
         "client_request_hook": client_request_hook,
         "client_response_hook": client_response_hook,
     }
+
+
 def _apply_fastapi_instrumentation(
     app: Any,
     instrument_kwargs: dict,
@@ -40,6 +46,7 @@ def _apply_fastapi_instrumentation(
         logger: Logger instance.
     """
     from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+
     try:
         FastAPIInstrumentor.instrument_app(app, **instrument_kwargs)
         logger.info("✓ FastAPI instrumentation enabled")
@@ -58,6 +65,8 @@ def _apply_fastapi_instrumentation(
             )
         else:
             raise
+
+
 def _log_fastapi_instrumentation_config(
     capture_settings: dict, otel_config: Any, logger: logging.Logger
 ) -> None:
@@ -74,6 +83,8 @@ def _log_fastapi_instrumentation_config(
         logger.info(f"  URL whitelist mode: {otel_config.included_urls}")
     elif otel_config.excluded_urls:
         logger.info(f"  URL blacklist: {otel_config.excluded_urls}")
+
+
 def _setup_fastapi_instrumentation(app: Any, logger: logging.Logger) -> None:
     """Setup FastAPI instrumentation for tracing HTTP requests.
     Industry Standard for SSE/Streaming:
@@ -97,6 +108,7 @@ def _setup_fastapi_instrumentation(app: Any, logger: logging.Logger) -> None:
             get_http_capture_settings,
             get_otel_config,
         )
+
         # Get HTTP capture settings
         capture_settings = get_http_capture_settings()
         # Get URL filtering configuration
@@ -126,8 +138,11 @@ def _setup_fastapi_instrumentation(app: Any, logger: logging.Logger) -> None:
         logger.debug("FastAPI instrumentation not available (package not installed)")
     except Exception as e:
         logger.warning(f"Failed to setup FastAPI instrumentation: {e}")
+
+
 def _create_server_request_hook(capture_settings: dict, logger: logging.Logger):
     """Create a server request hook for capturing request headers, query params, and body."""
+
     def server_request_hook(span, scope):
         """Hook called when a request is received."""
         if span is None or not span.is_recording():
@@ -162,6 +177,7 @@ def _create_server_request_hook(capture_settings: dict, logger: logging.Logger):
                     # Parse query parameters into individual attributes
                     try:
                         from urllib.parse import parse_qs
+
                         params = parse_qs(query_string)
                         for key, values in params.items():
                             # Join multiple values with comma
@@ -186,9 +202,13 @@ def _create_server_request_hook(capture_settings: dict, logger: logging.Logger):
                         span.set_attribute(f"http.request.path_param.{key}", str(value))
         except Exception as e:
             logger.debug(f"Error in server_request_hook: {e}")
+
     return server_request_hook
+
+
 def _create_client_response_hook(capture_settings: dict, logger: logging.Logger):
     """Create a client response hook for capturing response headers and body."""
+
     def client_response_hook(span, message):
         """Hook called when a response is sent."""
         if span is None or not span.is_recording():
@@ -230,4 +250,5 @@ def _create_client_response_hook(capture_settings: dict, logger: logging.Logger)
                     span.set_attribute("http.response.body", body_str)
         except Exception as e:
             logger.debug(f"Error in client_response_hook: {e}")
+
     return client_response_hook

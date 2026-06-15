@@ -30,7 +30,7 @@ export function ChatMessageList({ messages }: ChatMessageListProps) {
           className={cn(
             'max-w-[85%] rounded-md px-3 py-2 text-sm',
             message.role === 'user'
-              ? 'ml-auto bg-primary text-white'
+              ? 'ml-auto bg-primary text-on-primary'
               : 'bg-surface text-text-primary',
           )}
         >

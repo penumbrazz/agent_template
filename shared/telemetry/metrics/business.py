@@ -3,28 +3,38 @@ Business metrics for Agent Template services.
 Provides pre-defined metrics for tracking business operations
 such as sessions, messages, tasks, users, and model calls.
 """
+
 import logging
 from typing import Any, Dict, Optional
+
 from opentelemetry.metrics import Counter, Histogram, UpDownCounter
+
 from shared.telemetry.core import get_meter, is_telemetry_enabled
+
 logger = logging.getLogger(__name__)
+
+
 class AgentTemplateMetrics:
     """
     Pre-defined business metrics for Agent Template services.
     All metrics are lazily initialized on first access.
     """
+
     _instance: Optional["AgentTemplateMetrics"] = None
     _initialized: bool = False
+
     def __new__(cls) -> "AgentTemplateMetrics":
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
+
     def __init__(self):
         if self._initialized:
             return
         self._meter = get_meter("agent-template.metrics")
         self._metrics: Dict[str, Any] = {}
         self._initialized = True
+
     def _get_or_create_counter(
         self, name: str, description: str, unit: str = "1"
     ) -> Counter:
@@ -34,6 +44,7 @@ class AgentTemplateMetrics:
                 name=name, description=description, unit=unit
             )
         return self._metrics[name]
+
     def _get_or_create_up_down_counter(
         self, name: str, description: str, unit: str = "1"
     ) -> UpDownCounter:
@@ -43,6 +54,7 @@ class AgentTemplateMetrics:
                 name=name, description=description, unit=unit
             )
         return self._metrics[name]
+
     def _get_or_create_histogram(
         self, name: str, description: str, unit: str = "ms"
     ) -> Histogram:
@@ -52,6 +64,7 @@ class AgentTemplateMetrics:
                 name=name, description=description, unit=unit
             )
         return self._metrics[name]
+
     # Session metrics
     @property
     def session_opened(self) -> Counter:
@@ -60,6 +73,7 @@ class AgentTemplateMetrics:
             "agent-template.session.opened",
             "Number of sessions opened",
         )
+
     @property
     def session_active(self) -> UpDownCounter:
         """UpDownCounter for currently active sessions."""
@@ -67,6 +81,7 @@ class AgentTemplateMetrics:
             "agent-template.session.active",
             "Number of currently active sessions",
         )
+
     # Message metrics
     @property
     def message_sent(self) -> Counter:
@@ -75,6 +90,7 @@ class AgentTemplateMetrics:
             "agent-template.message.sent",
             "Number of messages sent",
         )
+
     @property
     def message_by_type(self) -> Counter:
         """Counter for messages by type."""
@@ -82,6 +98,7 @@ class AgentTemplateMetrics:
             "agent-template.message.by_type",
             "Number of messages by type",
         )
+
     # Task metrics
     @property
     def task_created(self) -> Counter:
@@ -90,6 +107,7 @@ class AgentTemplateMetrics:
             "agent-template.task.created",
             "Number of tasks created",
         )
+
     @property
     def task_completed(self) -> Counter:
         """Counter for completed tasks."""
@@ -97,6 +115,7 @@ class AgentTemplateMetrics:
             "agent-template.task.completed",
             "Number of tasks completed",
         )
+
     @property
     def task_failed(self) -> Counter:
         """Counter for failed tasks."""
@@ -104,6 +123,7 @@ class AgentTemplateMetrics:
             "agent-template.task.failed",
             "Number of tasks failed",
         )
+
     @property
     def task_duration(self) -> Histogram:
         """Histogram for task execution duration."""
@@ -112,6 +132,7 @@ class AgentTemplateMetrics:
             "Task execution duration in milliseconds",
             unit="ms",
         )
+
     # User metrics
     @property
     def user_active(self) -> Counter:
@@ -120,6 +141,7 @@ class AgentTemplateMetrics:
             "agent-template.user.active",
             "Number of active users",
         )
+
     @property
     def user_new(self) -> Counter:
         """Counter for new users."""
@@ -127,6 +149,7 @@ class AgentTemplateMetrics:
             "agent-template.user.new",
             "Number of new user registrations",
         )
+
     # Model metrics
     @property
     def model_calls(self) -> Counter:
@@ -135,6 +158,7 @@ class AgentTemplateMetrics:
             "agent-template.model.calls",
             "Number of model API calls",
         )
+
     @property
     def model_tokens(self) -> Counter:
         """Counter for token consumption."""
@@ -143,6 +167,8 @@ class AgentTemplateMetrics:
             "Number of tokens consumed",
             unit="tokens",
         )
+
+
 def get_agent_template_metrics() -> AgentTemplateMetrics:
     """
     Get the singleton AgentTemplateMetrics instance.
@@ -150,6 +176,8 @@ def get_agent_template_metrics() -> AgentTemplateMetrics:
         AgentTemplateMetrics: The metrics instance
     """
     return AgentTemplateMetrics()
+
+
 def record_session_opened(
     user_id: Optional[str] = None, workflow_id: Optional[str] = None
 ) -> None:
@@ -170,6 +198,8 @@ def record_session_opened(
         get_agent_template_metrics().session_opened.add(1, attributes)
     except Exception as e:
         logger.debug(f"Failed to record session opened metric: {e}")
+
+
 def record_session_active_change(delta: int) -> None:
     """
     Record a change in active session count.
@@ -182,6 +212,8 @@ def record_session_active_change(delta: int) -> None:
         get_agent_template_metrics().session_active.add(delta)
     except Exception as e:
         logger.debug(f"Failed to record session active metric: {e}")
+
+
 def record_message_sent(
     user_id: Optional[str] = None,
     workflow_id: Optional[str] = None,
@@ -214,6 +246,8 @@ def record_message_sent(
             metrics.message_by_type.add(1, {"message_type": message_type})
     except Exception as e:
         logger.debug(f"Failed to record message sent metric: {e}")
+
+
 def record_task_created(
     user_id: Optional[str] = None, workflow_id: Optional[str] = None
 ) -> None:
@@ -234,6 +268,8 @@ def record_task_created(
         get_agent_template_metrics().task_created.add(1, attributes)
     except Exception as e:
         logger.debug(f"Failed to record task created metric: {e}")
+
+
 def record_task_completed(
     user_id: Optional[str] = None,
     workflow_id: Optional[str] = None,
@@ -268,6 +304,8 @@ def record_task_completed(
             metrics.task_duration.record(duration_ms, duration_attrs)
     except Exception as e:
         logger.debug(f"Failed to record task completed metric: {e}")
+
+
 def record_task_failed(
     user_id: Optional[str] = None,
     workflow_id: Optional[str] = None,
@@ -293,6 +331,8 @@ def record_task_failed(
         get_agent_template_metrics().task_failed.add(1, attributes)
     except Exception as e:
         logger.debug(f"Failed to record task failed metric: {e}")
+
+
 def record_user_activity(is_new: bool = False) -> None:
     """
     Record user activity.
@@ -308,6 +348,8 @@ def record_user_activity(is_new: bool = False) -> None:
             metrics.user_new.add(1)
     except Exception as e:
         logger.debug(f"Failed to record user activity metric: {e}")
+
+
 def record_model_call(
     model_name: Optional[str] = None,
     agent_type: Optional[str] = None,

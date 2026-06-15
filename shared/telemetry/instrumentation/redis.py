@@ -1,6 +1,9 @@
 """Redis OpenTelemetry instrumentation."""
+
 import logging
 import os
+
+
 def _setup_redis_instrumentation(logger: logging.Logger) -> None:
     """Setup Redis instrumentation for tracing cache operations.
     Only records slow queries (>100ms) or errors to reduce noise from
@@ -12,6 +15,7 @@ def _setup_redis_instrumentation(logger: logging.Logger) -> None:
     """
     try:
         from opentelemetry.instrumentation.redis import RedisInstrumentor
+
         # Check if we should record all operations or only slow/errors
         record_all = os.getenv("OTEL_REDIS_RECORD_ALL", "false").lower() == "true"
         slow_threshold_ms = float(os.getenv("OTEL_REDIS_SLOW_THRESHOLD_MS", "100"))
@@ -19,6 +23,7 @@ def _setup_redis_instrumentation(logger: logging.Logger) -> None:
         if instrumentor.is_instrumented_by_opentelemetry:
             logger.info("✓ Redis instrumentation already enabled (early setup)")
             return
+
         # Create response hook to filter spans
         def redis_response_hook(span, instance, response):
             """Hook to filter Redis spans based on duration and errors."""
@@ -41,6 +46,7 @@ def _setup_redis_instrumentation(logger: logging.Logger) -> None:
             try:
                 # Try to get duration from span start/end time
                 from opentelemetry.trace import StatusCode
+
                 # Check if span has error status
                 if span.status.status_code == StatusCode.ERROR:
                     has_error = True
@@ -54,6 +60,7 @@ def _setup_redis_instrumentation(logger: logging.Logger) -> None:
                 # The actual duration filtering would require a custom span processor
                 # As a workaround, we add an attribute that can be used by a span processor
                 span.set_attribute("redis.filtered", True)
+
         # Build instrument kwargs
         instrument_kwargs = {}
         if not record_all:

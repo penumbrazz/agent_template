@@ -1,14 +1,20 @@
 'use client'
 
+import { useT } from '@/i18n'
 import { DemoBarChart } from './demo-bar-chart'
 import { DemoLineChart } from './demo-line-chart'
 import { DemoUserTable } from './demo-user-table'
 
 export function DemoDataSection() {
+  const t = useT()
+
   return (
-    <section className="mx-auto w-full max-w-5xl px-6 pb-24" data-testid="demo-data-section">
+    <section
+      className="mx-auto w-full max-w-5xl px-6 pb-24"
+      data-testid="demo-data-section"
+    >
       <h2 className="mb-8 text-lg font-display font-normal text-text-primary">
-        数据展示区
+        {t('demo.sectionTitle')}
       </h2>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -17,7 +23,7 @@ export function DemoDataSection() {
           data-testid="bar-chart-container"
         >
           <h3 className="mb-3 text-sm font-medium text-text-secondary">
-            月度销售额
+            {t('demo.barChartTitle')}
           </h3>
           <div className="h-72">
             <DemoBarChart />
@@ -28,7 +34,7 @@ export function DemoDataSection() {
           data-testid="line-chart-container"
         >
           <h3 className="mb-3 text-sm font-medium text-text-secondary">
-            用户增长趋势
+            {t('demo.lineChartTitle')}
           </h3>
           <div className="h-72">
             <DemoLineChart />
@@ -41,7 +47,7 @@ export function DemoDataSection() {
         data-testid="table-container"
       >
         <h3 className="mb-3 text-sm font-medium text-text-secondary">
-          用户数据表
+          {t('demo.tableTitle')}
         </h3>
         <DemoUserTable />
       </div>

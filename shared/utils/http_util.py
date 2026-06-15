@@ -1,4 +1,6 @@
 from typing import Any, Dict
+
+
 def build_payload(**kwargs: Any) -> Dict[str, Any]:
     """Build a request payload by filtering out None values.
     Args:

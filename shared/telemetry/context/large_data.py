@@ -6,11 +6,16 @@ query performance. These helpers provide a consistent pattern for:
 1. Storing metadata (length, preview) in span attributes for filtering
 2. Storing full data in span events for debugging
 """
+
 import json
 import logging
 from typing import Any, Dict, List, Optional
+
 from shared.telemetry.context.span import add_span_event, set_span_attributes
+
 logger = logging.getLogger(__name__)
+
+
 def log_large_attribute(
     attribute_name: str,
     data: Any,
@@ -59,6 +64,8 @@ def log_large_attribute(
         add_span_event(event_name, event_attrs)
     except Exception as e:
         logger.debug(f"Failed to log large attribute {attribute_name}: {e}")
+
+
 def log_large_string_list(
     attribute_name: str,
     items: List[str],
@@ -97,6 +104,8 @@ def log_large_string_list(
         add_span_event(event_name, event_attrs)
     except Exception as e:
         logger.debug(f"Failed to log large string list {attribute_name}: {e}")
+
+
 def log_json_body(
     attribute_name: str,
     body: Any,

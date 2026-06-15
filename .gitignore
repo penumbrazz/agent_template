@@ -33,3 +33,5 @@ docs/superpowers/
 .claude/settings.json
 .mcp.json
 .workbuddy/memory/
+backend/.coverage
+frontend/.swc/plugins/macos_aarch64_18.0.0/

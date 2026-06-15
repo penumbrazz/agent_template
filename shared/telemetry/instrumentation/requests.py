@@ -1,11 +1,17 @@
 """Requests (sync HTTP client) OpenTelemetry instrumentation."""
+
 import logging
+
 from shared.telemetry.context.large_data import log_json_body
+
+
 def _setup_requests_instrumentation(logger: logging.Logger) -> None:
     """Setup Requests instrumentation for tracing sync HTTP client requests."""
     try:
         from opentelemetry.instrumentation.requests import RequestsInstrumentor
+
         from shared.telemetry.config import get_http_capture_settings
+
         # Get HTTP capture settings
         capture_settings = get_http_capture_settings()
         # Build hooks for capturing request/response data
@@ -34,8 +40,11 @@ def _setup_requests_instrumentation(logger: logging.Logger) -> None:
         logger.debug("Requests instrumentation not available (package not installed)")
     except Exception as e:
         logger.warning(f"Failed to setup Requests instrumentation: {e}")
+
+
 def _create_requests_request_hook(capture_settings: dict, logger: logging.Logger):
     """Create a request hook for Requests library to capture request headers and body."""
+
     def request_hook(span, request):
         """Hook called when a Requests request is made."""
         if span is None or not span.is_recording():
@@ -61,9 +70,13 @@ def _create_requests_request_hook(capture_settings: dict, logger: logging.Logger
                     logger.debug(f"Failed to capture Requests request body: {e}")
         except Exception as e:
             logger.debug(f"Error in Requests request_hook: {e}")
+
     return request_hook
+
+
 def _create_requests_response_hook(capture_settings: dict, logger: logging.Logger):
     """Create a response hook for Requests library to capture response headers and body."""
+
     def response_hook(span, request, response):
         """Hook called when a Requests response is received."""
         if span is None or not span.is_recording():
@@ -89,4 +102,5 @@ def _create_requests_response_hook(capture_settings: dict, logger: logging.Logge
                     logger.debug(f"Failed to capture Requests response body: {e}")
         except Exception as e:
             logger.debug(f"Error in Requests response_hook: {e}")
+
     return response_hook

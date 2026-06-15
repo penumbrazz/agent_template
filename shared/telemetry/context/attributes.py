@@ -3,8 +3,11 @@ Standard span attribute keys for Agent Template services.
 Provides consistent attribute naming across all services
 for better trace analysis and filtering.
 """
+
+
 class SpanAttributes:
     """Standard span attribute keys for consistent tracing."""
+
     # User attributes
     USER_ID = "user.id"
     USER_NAME = "user.name"

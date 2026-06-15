@@ -67,7 +67,7 @@ export function ChatInputArea({
           data-testid="agent-chat-send-button"
           onClick={onSend}
           disabled={!draft.trim() && attachments.length === 0}
-          className="flex h-11 min-w-[44px] shrink-0 items-center justify-center rounded-md bg-primary text-white hover:bg-primary-active disabled:opacity-40 disabled:hover:bg-primary transition-colors"
+          className="flex h-11 min-w-[44px] shrink-0 items-center justify-center rounded-md bg-primary text-on-primary hover:bg-primary-active disabled:opacity-40 disabled:hover:bg-primary transition-colors"
           type="button"
         >
           <Send className="h-4 w-4" />

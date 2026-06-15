@@ -30,7 +30,7 @@ export function SelectionOverlay({
     >
       <div
         data-testid="selection-overlay-hint"
-        className="absolute left-1/2 top-4 -translate-x-1/2 rounded-full bg-surface-dark px-4 py-2 text-sm text-white shadow-lg"
+        className="absolute left-1/2 top-4 -translate-x-1/2 rounded-full bg-surface-dark px-4 py-2 text-sm text-on-dark shadow-lg"
       >
         {t('agentChat.selectionHint')}
       </div>

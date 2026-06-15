@@ -36,7 +36,7 @@ export function AccountSettings() {
       <h3 className="text-base font-medium">{t('settings.account.title')}</h3>
       <div className="rounded-lg border border-border p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-white">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary">
             <User className="h-5 w-5" />
           </div>
           <div className="min-w-0">
@@ -48,7 +48,7 @@ export function AccountSettings() {
       <div className="pt-4 border-t flex justify-end">
         <Button
           variant="outline"
-          className="text-primary border-primary hover:bg-primary hover:text-white"
+          className="text-primary border-primary hover:bg-primary hover:text-on-primary"
           onClick={() => setConfirmOpen(true)}
           data-testid="logout-button"
         >
@@ -74,7 +74,7 @@ export function AccountSettings() {
               {t('common.cancel')}
             </Button>
             <Button
-              className="bg-primary hover:bg-primary-active text-white"
+              className="bg-primary hover:bg-primary-active text-on-primary"
               onClick={handleLogout}
               data-testid="logout-confirm-button"
             >

@@ -22,10 +22,12 @@ Environment Variables:
         This is the industry standard approach to reduce noise from streaming endpoints like /api/chat/stream
         where each chunk would otherwise create a separate span. See OpenTelemetry ASGI instrumentation docs.
 """
+
 import os
 import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
+
 # Body size constants
 DEFAULT_MAX_BODY_SIZE = 4096  # Default max body size to capture in bytes
 MAX_BODY_SIZE_HARD_LIMIT = 1048576  # Hard limit of 1MB to prevent memory issues
@@ -46,6 +48,8 @@ DEFAULT_EXCLUDED_URLS = [
     "/executor-manager/sandboxes/.*/heartbeat$",
     "/executor-manager/tasks/.*/heartbeat$",
 ]
+
+
 @dataclass
 class OtelConfig:
     """
@@ -53,6 +57,7 @@ class OtelConfig:
     This class holds all OTEL configuration values loaded from environment
     variables. Use get_otel_config() to get a singleton instance.
     """
+
     enabled: bool
     service_name: str
     otlp_endpoint: str
@@ -72,8 +77,12 @@ class OtelConfig:
     disable_send_receive_spans: bool = (
         True  # Disable internal http.send/http.receive spans for SSE/streaming
     )
+
+
 # Cached configuration instance
 _otel_config: Optional[OtelConfig] = None
+
+
 def get_otel_config(service_name_override: Optional[str] = None) -> OtelConfig:
     """
     Get OpenTelemetry configuration from environment variables.
@@ -145,6 +154,8 @@ def get_otel_config(service_name_override: Optional[str] = None) -> OtelConfig:
             == "true",
         )
     return _otel_config
+
+
 def get_otel_config_from_env() -> Dict[str, Any]:
     """
     Get OpenTelemetry configuration from environment variables as a dictionary.
@@ -166,6 +177,8 @@ def get_otel_config_from_env() -> Dict[str, Any]:
         "sampler_ratio": config.sampler_ratio,
         "metrics_enabled": config.metrics_enabled,
     }
+
+
 # Global HTTP capture settings
 _http_capture_settings: Dict[str, Any] = {
     "capture_request_headers": False,
@@ -174,6 +187,8 @@ _http_capture_settings: Dict[str, Any] = {
     "capture_response_body": False,
     "max_body_size": DEFAULT_MAX_BODY_SIZE,
 }
+
+
 def get_http_capture_settings() -> Dict[str, Any]:
     """
     Get the current HTTP capture settings.
@@ -181,6 +196,8 @@ def get_http_capture_settings() -> Dict[str, Any]:
         dict: HTTP capture settings dictionary
     """
     return _http_capture_settings.copy()
+
+
 def set_http_capture_settings(
     capture_request_headers: bool = False,
     capture_request_body: bool = False,
@@ -203,6 +220,8 @@ def set_http_capture_settings(
     _http_capture_settings["capture_response_headers"] = capture_response_headers
     _http_capture_settings["capture_response_body"] = capture_response_body
     _http_capture_settings["max_body_size"] = max_body_size
+
+
 def reset_otel_config() -> None:
     """
     Reset the cached OTEL configuration.
@@ -211,6 +230,8 @@ def reset_otel_config() -> None:
     """
     global _otel_config
     _otel_config = None
+
+
 def should_trace_url(url: str, config: Optional[OtelConfig] = None) -> bool:
     """
     Check if a URL should be traced based on include/exclude patterns.
@@ -241,6 +262,8 @@ def should_trace_url(url: str, config: Optional[OtelConfig] = None) -> bool:
         return not _url_matches_patterns(url, config.excluded_urls)
     # No filters configured, trace everything
     return True
+
+
 def _url_matches_patterns(url: str, patterns: List[str]) -> bool:
     """
     Check if a URL matches any of the given patterns.
@@ -254,6 +277,8 @@ def _url_matches_patterns(url: str, patterns: List[str]) -> bool:
         if _url_matches_pattern(url, pattern):
             return True
     return False
+
+
 def _url_matches_pattern(url: str, pattern: str) -> bool:
     """
     Check if a URL matches a single pattern.
@@ -279,6 +304,8 @@ def _url_matches_pattern(url: str, pattern: str) -> bool:
         return url.startswith(prefix)
     # Exact match
     return url == pattern
+
+
 def get_excluded_urls_regex() -> str:
     """
     Get excluded URLs as a comma-separated string for FastAPI instrumentation.

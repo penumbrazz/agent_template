@@ -2,13 +2,17 @@
 OpenTelemetry decorators for tracing functions and methods.
 Provides decorators to add tracing to functions without modifying business logic.
 """
+
 import functools
 import logging
 import os
 from typing import Any, Callable, Dict, Optional, TypeVar, Union
+
 logger = logging.getLogger(__name__)
 # Type variable for generic function signatures
 F = TypeVar("F", bound=Callable[..., Any])
+
+
 def _is_telemetry_enabled() -> bool:
     """Check if telemetry is enabled."""
     otel_enabled = os.getenv("OTEL_ENABLED", "false").lower() == "true"
@@ -16,16 +20,22 @@ def _is_telemetry_enabled() -> bool:
         return False
     try:
         from shared.telemetry.core import is_telemetry_enabled
+
         return is_telemetry_enabled()
     except Exception:
         return False
+
+
 def _get_tracer(name: str):
     """Get a tracer instance."""
     try:
         from shared.telemetry.core import get_tracer
+
         return get_tracer(name)
     except Exception:
         return None
+
+
 def _build_span_attributes(
     static_attributes: Optional[Dict[str, Any]],
     extract_attributes: Optional[Callable[..., Dict[str, Any]]],
@@ -50,6 +60,8 @@ def _build_span_attributes(
         except Exception as e:
             logger.debug(f"Failed to extract attributes: {e}")
     return span_attributes
+
+
 def _finalize_span(span: Any, result: Any) -> None:
     """Set span status based on the function result.
     Inspects the result for a ``value`` attribute and maps common
@@ -60,6 +72,7 @@ def _finalize_span(span: Any, result: Any) -> None:
         result: The return value of the traced function.
     """
     from opentelemetry import trace as otel_trace
+
     if hasattr(result, "value"):
         result_value = (
             result.value.lower()
@@ -72,6 +85,8 @@ def _finalize_span(span: Any, result: Any) -> None:
             span.set_status(
                 otel_trace.Status(otel_trace.StatusCode.ERROR, "Task failed")
             )
+
+
 def trace_async(
     span_name: Optional[str] = None,
     tracer_name: str = "executor",
@@ -101,6 +116,7 @@ def trace_async(
             # Business logic here
             pass
     """
+
     def decorator(func: F) -> F:
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
@@ -119,6 +135,7 @@ def trace_async(
             # Import OpenTelemetry types
             try:
                 from opentelemetry import trace
+
                 with tracer.start_as_current_span(
                     name, kind=trace.SpanKind.INTERNAL, attributes=span_attributes
                 ) as span:
@@ -133,8 +150,12 @@ def trace_async(
                         raise
             except ImportError:
                 return await func(*args, **kwargs)
+
         return wrapper  # type: ignore
+
     return decorator
+
+
 def trace_sync(
     span_name: Optional[str] = None,
     tracer_name: str = "executor",
@@ -157,6 +178,7 @@ def trace_sync(
             # Business logic here
             pass
     """
+
     def decorator(func: F) -> F:
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -175,6 +197,7 @@ def trace_sync(
             # Import OpenTelemetry types
             try:
                 from opentelemetry import trace
+
                 with tracer.start_as_current_span(
                     name, kind=trace.SpanKind.INTERNAL, attributes=span_attributes
                 ) as span:
@@ -189,8 +212,12 @@ def trace_sync(
                         raise
             except ImportError:
                 return func(*args, **kwargs)
+
         return wrapper  # type: ignore
+
     return decorator
+
+
 def add_span_event(
     event_name: str, attributes: Optional[Dict[str, Any]] = None
 ) -> None:
@@ -206,11 +233,14 @@ def add_span_event(
         return
     try:
         from opentelemetry import trace
+
         span = trace.get_current_span()
         if span and span.is_recording():
             span.add_event(event_name, attributes=attributes)
     except Exception as e:
         logger.debug(f"Failed to add span event: {e}")
+
+
 def set_span_attribute(key: str, value: Any) -> None:
     """
     Set an attribute on the current span.
@@ -222,11 +252,14 @@ def set_span_attribute(key: str, value: Any) -> None:
         return
     try:
         from opentelemetry import trace
+
         span = trace.get_current_span()
         if span and span.is_recording():
             span.set_attribute(key, value)
     except Exception as e:
         logger.debug(f"Failed to set span attribute: {e}")
+
+
 def capture_trace_context() -> Optional[Dict[str, str]]:
     """
     Capture the current trace context for propagation to background tasks.
@@ -250,6 +283,7 @@ def capture_trace_context() -> Optional[Dict[str, str]]:
         from opentelemetry.trace.propagation.tracecontext import (
             TraceContextTextMapPropagator,
         )
+
         carrier: Dict[str, str] = {}
         propagator = TraceContextTextMapPropagator()
         propagator.inject(carrier)
@@ -257,6 +291,8 @@ def capture_trace_context() -> Optional[Dict[str, str]]:
     except Exception as e:
         logger.debug(f"Failed to capture trace context: {e}")
         return None
+
+
 def trace_background(
     span_name: Optional[str] = None,
     tracer_name: str = "background.worker",
@@ -287,6 +323,7 @@ def trace_background(
             add_span_event("task.started", {"data": str(data)})
             ...
     """
+
     def decorator(func: F) -> F:
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -316,6 +353,7 @@ def trace_background(
                 from opentelemetry.trace.propagation.tracecontext import (
                     TraceContextTextMapPropagator,
                 )
+
                 # Try to restore parent context from trace_context parameter
                 parent_context = None
                 trace_ctx = kwargs.get(context_param)
@@ -352,8 +390,12 @@ def trace_background(
                     otel_context.detach(token)
             except ImportError:
                 return func(*args, **kwargs)
+
         return wrapper  # type: ignore
+
     return decorator
+
+
 def trace_async_generator(
     span_name: Optional[str] = None,
     tracer_name: str = "chat_shell",
@@ -381,6 +423,7 @@ def trace_async_generator(
             yield "chunk1"
             yield "chunk2"
     """
+
     def decorator(func: F) -> F:
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
@@ -409,6 +452,7 @@ def trace_async_generator(
             # Import OpenTelemetry types
             try:
                 from opentelemetry import trace
+
                 with tracer.start_as_current_span(
                     name, kind=trace.SpanKind.INTERNAL, attributes=span_attributes
                 ) as span:
@@ -423,5 +467,7 @@ def trace_async_generator(
             except ImportError:
                 async for item in func(*args, **kwargs):
                     yield item
+
         return wrapper  # type: ignore
+
     return decorator

@@ -50,7 +50,7 @@ export function SettingsPanel() {
               className={cn(
                 'text-left px-3 py-2 rounded-md text-sm transition-colors',
                 activeTab === 'account'
-                  ? 'bg-primary text-white'
+                  ? 'bg-primary text-on-primary'
                   : 'text-text-muted hover:bg-border',
               )}
             >
@@ -62,7 +62,7 @@ export function SettingsPanel() {
               className={cn(
                 'text-left px-3 py-2 rounded-md text-sm transition-colors',
                 activeTab === 'general'
-                  ? 'bg-primary text-white'
+                  ? 'bg-primary text-on-primary'
                   : 'text-text-muted hover:bg-border',
               )}
             >
@@ -74,7 +74,7 @@ export function SettingsPanel() {
               className={cn(
                 'text-left px-3 py-2 rounded-md text-sm transition-colors',
                 activeTab === 'models'
-                  ? 'bg-primary text-white'
+                  ? 'bg-primary text-on-primary'
                   : 'text-text-muted hover:bg-border',
               )}
             >

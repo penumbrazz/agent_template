@@ -1,12 +1,16 @@
 """SQLAlchemy OpenTelemetry instrumentation."""
+
 import logging
 from typing import Any
+
+
 def _setup_sqlalchemy_instrumentation(
     logger: logging.Logger, engine: Any = None
 ) -> None:
     """Setup SQLAlchemy instrumentation for tracing database queries."""
     try:
         from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+
         if engine is None:
             logger.warning(
                 "SQLAlchemy instrumentation requested but no engine provided"

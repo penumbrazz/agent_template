@@ -27,8 +27,10 @@ Usage:
     from shared.telemetry.context import set_user_context, set_task_context
     from shared.telemetry.metrics import record_task_completed, record_model_call
 """
+
 # Configuration
 from shared.telemetry.config import get_http_capture_settings, get_otel_config_from_env
+
 # Core initialization and lifecycle
 from shared.telemetry.core import (
     get_meter,
@@ -37,6 +39,7 @@ from shared.telemetry.core import (
     is_telemetry_enabled,
     shutdown_telemetry,
 )
+
 # Decorators for tracing
 from shared.telemetry.decorators import (
     add_span_event,
@@ -44,8 +47,10 @@ from shared.telemetry.decorators import (
     trace_async,
     trace_sync,
 )
+
 # Instrumentation
 from shared.telemetry.instrumentation import setup_opentelemetry_instrumentation
+
 __all__ = [
     # Core
     "init_telemetry",

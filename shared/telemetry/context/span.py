@@ -7,10 +7,13 @@ Also provides ContextVars for automatic propagation of business context
 NOTE: OpenTelemetry imports are lazy-loaded to reduce memory usage
 when telemetry is disabled (e.g., in standalone mode).
 """
+
 import logging
 from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any, Dict, Optional
+
 from shared.telemetry.context.attributes import SpanAttributes
+
 # Type hints only - not imported at runtime
 if TYPE_CHECKING:
     from opentelemetry.trace import Span
@@ -30,6 +33,8 @@ _websocket_context_var: ContextVar[bool] = ContextVar(
 )
 # Cached server IP (doesn't change during process lifetime)
 _cached_server_ip: Optional[str] = None
+
+
 def get_server_ip() -> str:
     """
     Get the server IP address with caching.
@@ -41,8 +46,11 @@ def get_server_ip() -> str:
     global _cached_server_ip
     if _cached_server_ip is None:
         from shared.utils.ip_util import get_host_ip
+
         _cached_server_ip = get_host_ip()
     return _cached_server_ip
+
+
 def get_request_id() -> Optional[str]:
     """
     Get the current request ID from ContextVar.
@@ -51,12 +59,18 @@ def get_request_id() -> Optional[str]:
         The current request ID or None if not set
     """
     return _request_id_var.get()
+
+
 def is_websocket_context() -> bool:
     """Check if current context is a WebSocket context."""
     return _websocket_context_var.get()
+
+
 def set_websocket_context(is_websocket: bool = True) -> None:
     """Mark current context as WebSocket context."""
     _websocket_context_var.set(is_websocket)
+
+
 def copy_context_vars() -> Dict[str, Any]:
     """
     Copy all telemetry ContextVar values to a dictionary.
@@ -73,6 +87,8 @@ def copy_context_vars() -> Dict[str, Any]:
         "user_name": _user_name_var.get(),
         "request_id": _request_id_var.get(),
     }
+
+
 def restore_context_vars(context_dict: Dict[str, Any]) -> None:
     """
     Restore ContextVar values from a dictionary.
@@ -91,6 +107,8 @@ def restore_context_vars(context_dict: Dict[str, Any]) -> None:
         _user_name_var.set(context_dict["user_name"])
     if context_dict.get("request_id") is not None:
         _request_id_var.set(context_dict["request_id"])
+
+
 def get_business_context() -> Dict[str, Any]:
     """
     Get the current business context from ContextVars.
@@ -114,14 +132,21 @@ def get_business_context() -> Dict[str, Any]:
     if request_id is not None:
         context[SpanAttributes.REQUEST_ID] = request_id
     return context
+
+
 logger = logging.getLogger(__name__)
+
+
 def _is_telemetry_enabled() -> bool:
     """
     Check if telemetry is enabled.
     This is a local helper to avoid circular imports.
     """
     from shared.telemetry.core import is_telemetry_enabled
+
     return is_telemetry_enabled()
+
+
 def get_current_span() -> Optional["Span"]:
     """
     Get the current active span.
@@ -132,10 +157,13 @@ def get_current_span() -> Optional["Span"]:
         return None
     # Lazy import
     from opentelemetry import trace
+
     span = trace.get_current_span()
     if span and span.is_recording():
         return span
     return None
+
+
 def set_span_attributes(attributes: Dict[str, Any]) -> None:
     """
     Add attributes to the current span.
@@ -157,6 +185,8 @@ def set_span_attributes(attributes: Dict[str, Any]) -> None:
                     span.set_attribute(key, str(value))
     except Exception as e:
         logger.debug(f"Failed to set span attributes: {e}")
+
+
 def add_span_event(name: str, attributes: Optional[Dict[str, Any]] = None) -> None:
     """
     Add an event to the current span.
@@ -181,6 +211,8 @@ def add_span_event(name: str, attributes: Optional[Dict[str, Any]] = None) -> No
         span.add_event(name, event_attributes)
     except Exception as e:
         logger.debug(f"Failed to add span event: {e}")
+
+
 def set_span_error(
     error: Exception, description: Optional[str] = None, record_exception: bool = True
 ) -> None:
@@ -199,6 +231,7 @@ def set_span_error(
     try:
         # Lazy import
         from opentelemetry.trace import Status, StatusCode
+
         if record_exception:
             span.record_exception(error)
         span.set_status(
@@ -206,6 +239,8 @@ def set_span_error(
         )
     except Exception as e:
         logger.debug(f"Failed to set span error: {e}")
+
+
 def record_stream_error(
     error: Exception,
     event_name: str,
@@ -243,6 +278,8 @@ def record_stream_error(
         attributes.update(extra_attributes)
     # Add span event
     add_span_event(event_name, attributes)
+
+
 def set_span_ok(description: Optional[str] = None) -> None:
     """
     Mark the current span as successful.
@@ -257,9 +294,12 @@ def set_span_ok(description: Optional[str] = None) -> None:
     try:
         # Lazy import
         from opentelemetry.trace import Status, StatusCode
+
         span.set_status(Status(status_code=StatusCode.OK, description=description))
     except Exception as e:
         logger.debug(f"Failed to set span OK status: {e}")
+
+
 def create_child_span(
     name: str,
     attributes: Optional[Dict[str, Any]] = None,
@@ -278,6 +318,7 @@ def create_child_span(
     try:
         # Lazy import
         from opentelemetry import trace
+
         tracer = trace.get_tracer(__name__)
         span = tracer.start_span(name)
         if attributes:
@@ -291,6 +332,8 @@ def create_child_span(
     except Exception as e:
         logger.debug(f"Failed to create child span: {e}")
         return None
+
+
 # ============================================================================
 # Context Setters for Common Business Entities
 # ============================================================================
@@ -317,6 +360,8 @@ def set_user_context(
         attributes[SpanAttributes.USER_NAME] = user_name
     if attributes:
         set_span_attributes(attributes)
+
+
 def set_task_context(
     task_id: Optional[int] = None, subtask_id: Optional[int] = None
 ) -> None:
@@ -340,6 +385,8 @@ def set_task_context(
         attributes[SpanAttributes.SUBTASK_ID] = subtask_id
     if attributes:
         set_span_attributes(attributes)
+
+
 def set_workflow_context(
     workflow_id: Optional[str] = None, workflow_name: Optional[str] = None
 ) -> None:
@@ -356,6 +403,8 @@ def set_workflow_context(
         attributes[SpanAttributes.WORKFLOW_NAME] = workflow_name
     if attributes:
         set_span_attributes(attributes)
+
+
 def set_agent_profile_context(
     agent_profile_id: Optional[str] = None,
     agent_profile_name: Optional[str] = None,
@@ -373,6 +422,8 @@ def set_agent_profile_context(
         attributes[SpanAttributes.AGENT_PROFILE_NAME] = agent_profile_name
     if attributes:
         set_span_attributes(attributes)
+
+
 def set_model_context(
     model_name: Optional[str] = None, model_provider: Optional[str] = None
 ) -> None:
@@ -389,6 +440,8 @@ def set_model_context(
         attributes[SpanAttributes.MODEL_PROVIDER] = model_provider
     if attributes:
         set_span_attributes(attributes)
+
+
 def set_agent_context(
     agent_type: Optional[str] = None, agent_name: Optional[str] = None
 ) -> None:
@@ -405,6 +458,8 @@ def set_agent_context(
         attributes[SpanAttributes.AGENT_NAME] = agent_name
     if attributes:
         set_span_attributes(attributes)
+
+
 def set_request_context(request_id: Optional[str] = None) -> None:
     """
     Set request context attributes on the current span AND store in ContextVar
@@ -424,6 +479,8 @@ def set_request_context(request_id: Optional[str] = None) -> None:
     # Set on current span immediately
     if attributes:
         set_span_attributes(attributes)
+
+
 def init_request_context() -> str:
     """
     Initialize request context with a new UUID for log correlation.
@@ -441,9 +498,12 @@ def init_request_context() -> str:
         ```
     """
     import uuid
+
     request_id = str(uuid.uuid4())[:8]
     set_request_context(request_id)
     return request_id
+
+
 def set_repository_context(
     repository_url: Optional[str] = None, branch_name: Optional[str] = None
 ) -> None:
@@ -460,6 +520,8 @@ def set_repository_context(
         attributes[SpanAttributes.BRANCH_NAME] = branch_name
     if attributes:
         set_span_attributes(attributes)
+
+
 # ============================================================================
 # OpenTelemetry Context Management for Async Boundaries
 # ============================================================================
@@ -494,6 +556,7 @@ def attach_otel_context(otel_context: Any) -> Optional[object]:
     try:
         # Lazy import
         from opentelemetry import context
+
         token = context.attach(otel_context)
         logger.debug(
             "Attached OpenTelemetry context for parent-child span relationships"
@@ -502,6 +565,8 @@ def attach_otel_context(otel_context: Any) -> Optional[object]:
     except Exception as e:
         logger.debug(f"Failed to attach OpenTelemetry context: {e}")
         return None
+
+
 def detach_otel_context(token: Optional[object]) -> None:
     """
     Safely detach OpenTelemetry context.
@@ -524,6 +589,7 @@ def detach_otel_context(token: Optional[object]) -> None:
     try:
         # Lazy import
         from opentelemetry import context
+
         context.detach(token)
         logger.debug("Detached OpenTelemetry context")
     except Exception as e:

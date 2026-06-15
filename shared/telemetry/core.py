@@ -5,9 +5,11 @@ OpenTelemetry tracing and metrics.
 NOTE: OpenTelemetry imports are lazy-loaded to reduce memory usage
 when telemetry is disabled (e.g., in standalone mode).
 """
+
 import logging
 import os
 from typing import TYPE_CHECKING, Any, Optional
+
 # Type hints only - not imported at runtime
 if TYPE_CHECKING:
     from opentelemetry.metrics import Meter
@@ -16,6 +18,8 @@ logger = logging.getLogger(__name__)
 # Global state for telemetry
 _telemetry_initialized = False
 _telemetry_enabled = False
+
+
 def _build_resource(
     service_name: str,
     service_version: str,
@@ -30,6 +34,7 @@ def _build_resource(
         Configured Resource instance.
     """
     from opentelemetry.sdk.resources import Resource
+
     resource_attributes = {
         "service.name": service_name,
         "service.version": service_version,
@@ -41,6 +46,8 @@ def _build_resource(
         env = os.getenv("ENVIRONMENT", os.getenv("ENV", "development"))
         resource_attributes["deployment.environment"] = env
     return Resource.create(resource_attributes)
+
+
 def _log_http_capture_settings(
     capture_request_headers: bool,
     capture_request_body: bool,
@@ -67,6 +74,8 @@ def _log_http_capture_settings(
         http_capture_info.append("response_body")
     capture_str = ", ".join(http_capture_info) if http_capture_info else "none"
     logger.info(f"HTTP capture: [{capture_str}], max_body_size: {max_body_size} bytes")
+
+
 def init_telemetry(
     service_name: str,
     enabled: bool = True,
@@ -105,6 +114,7 @@ def init_telemetry(
         return _telemetry_enabled
     # Lazy import config module
     from shared.telemetry.config import set_http_capture_settings
+
     # Store HTTP capture settings globally
     set_http_capture_settings(
         capture_request_headers=capture_request_headers,
@@ -124,6 +134,7 @@ def init_telemetry(
             init_meter_provider,
             init_tracer_provider,
         )
+
         resource = _build_resource(
             service_name, service_version, deployment_environment
         )
@@ -154,6 +165,8 @@ def init_telemetry(
         _telemetry_initialized = True
         _telemetry_enabled = False
         return False
+
+
 def shutdown_telemetry() -> None:
     """
     Gracefully shutdown telemetry providers.
@@ -165,6 +178,7 @@ def shutdown_telemetry() -> None:
     try:
         # Lazy import only when needed
         from shared.telemetry.providers import shutdown_providers
+
         shutdown_providers()
         logger.info("OpenTelemetry shutdown completed")
     except Exception as e:
@@ -172,6 +186,8 @@ def shutdown_telemetry() -> None:
     finally:
         _telemetry_initialized = False
         _telemetry_enabled = False
+
+
 def is_telemetry_enabled() -> bool:
     """
     Check if telemetry is enabled and initialized.
@@ -179,6 +195,8 @@ def is_telemetry_enabled() -> bool:
         bool: True if telemetry is enabled, False otherwise
     """
     return _telemetry_enabled
+
+
 def get_tracer(name: str) -> "Tracer":
     """
     Get a Tracer instance for creating spans.
@@ -189,7 +207,10 @@ def get_tracer(name: str) -> "Tracer":
     """
     # Lazy import
     from opentelemetry import trace
+
     return trace.get_tracer(name)
+
+
 def get_meter(name: str) -> "Meter":
     """
     Get a Meter instance for creating metrics.
@@ -200,4 +221,5 @@ def get_meter(name: str) -> "Meter":
     """
     # Lazy import
     from opentelemetry import metrics
+
     return metrics.get_meter(name)

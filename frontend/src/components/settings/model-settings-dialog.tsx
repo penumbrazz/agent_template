@@ -61,9 +61,7 @@ export function ModelSettingsDialog({
     try {
       const data: ModelUpdate = {
         model_type: modelType,
-        context_length: contextLength
-          ? parseInt(contextLength, 10)
-          : undefined,
+        context_length: contextLength ? parseInt(contextLength, 10) : undefined,
         max_output_tokens: maxOutputTokens
           ? parseInt(maxOutputTokens, 10)
           : undefined,

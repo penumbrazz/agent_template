@@ -49,8 +49,7 @@ export function DemoEchartsWrapper({
     if (!Array.isArray(series)) return points
 
     for (const s of series) {
-      const seriesName =
-        typeof s.name === 'string' ? s.name : 'unknown'
+      const seriesName = typeof s.name === 'string' ? s.name : 'unknown'
       const data = s.data
       if (!Array.isArray(data)) continue
 

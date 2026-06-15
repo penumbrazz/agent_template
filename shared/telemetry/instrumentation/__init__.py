@@ -8,8 +8,11 @@ This module provides auto-instrumentation for:
 - Requests (sync HTTP client)
 - System metrics (CPU, memory, etc.)
 """
+
 import logging
 from typing import Any, Optional
+
+
 def setup_opentelemetry_instrumentation(
     app: Any,
     logger: Optional[logging.Logger] = None,
@@ -26,6 +29,7 @@ def setup_opentelemetry_instrumentation(
     from .requests import _setup_requests_instrumentation
     from .sqlalchemy import _setup_sqlalchemy_instrumentation
     from .system_metrics import _setup_system_metrics_instrumentation
+
     _setup_fastapi_instrumentation(app, logger)
     if enable_sqlalchemy:
         _setup_sqlalchemy_instrumentation(logger, sqlalchemy_engine)
