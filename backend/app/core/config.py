@@ -22,7 +22,17 @@ class Settings(BaseSettings):
     DB_MAX_OVERFLOW: int = 10
     REDIS_URL: str = "redis://localhost:6379/0"
 
-    SECRET_KEY: str = "change-me"
+    # Number of trusted reverse proxy hops in front of the backend.
+    # 0 (default) means no proxy is trusted: the client IP is taken from the
+    # transport-level peer (request.client.host) and the X-Forwarded-For
+    # header is NEVER consulted. Set this to the exact number of proxies
+    # (e.g. 1 for a single NGINX/Cloudflare hop, 2 for CDN + load balancer)
+    # so the rightmost N hops of X-Forwarded-For are stripped and the
+    # preceding entry is treated as the real client address. Values < 0 are
+    # treated as 0 (no trust).
+    TRUSTED_PROXY_HOPS: int = 0
+
+    SECRET_KEY: str = ""
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
@@ -37,7 +47,11 @@ class Settings(BaseSettings):
 
     SENTRY_DSN: str = ""  # GlitchTip DSN (uses Sentry SDK protocol)
 
-    ENCRYPTION_KEY: str = "12345678901234567890123456789012"
+    ENCRYPTION_KEY: str = ""
+
+    # Optional explicit password for the initial admin user created at startup.
+    # When unset in non-dev environments, the default admin is NOT seeded.
+    INITIAL_ADMIN_PASSWORD: str = ""
 
     SENTRY_TRACES_SAMPLE_RATE: float = 1.0
 
@@ -50,23 +64,23 @@ class Settings(BaseSettings):
 
     def model_post_init(self, __context) -> None:
         """Validate insecure defaults after model initialization."""
-        if self.ENVIRONMENT != "development" and self.SECRET_KEY in _INSECURE_DEFAULTS:
+        secret_key_insecure = (
+            not self.SECRET_KEY or self.SECRET_KEY in _INSECURE_DEFAULTS
+        )
+        if self.ENVIRONMENT != "development" and secret_key_insecure:
             raise ValueError(
-                f"SECRET_KEY is set to insecure default '{self.SECRET_KEY}'. "
+                "SECRET_KEY is empty or set to a known insecure default. "
                 "Set a strong SECRET_KEY in production."
             )
-        if self.ENVIRONMENT == "development" and self.SECRET_KEY in _INSECURE_DEFAULTS:
+        if self.ENVIRONMENT == "development" and secret_key_insecure:
             warnings.warn(
-                "SECRET_KEY uses an insecure default. Change it before deploying.",
+                "SECRET_KEY is empty or insecure. Change it before deploying.",
                 stacklevel=2,
             )
-        if (
-            self.ENVIRONMENT != "development"
-            and self.ENCRYPTION_KEY == "12345678901234567890123456789012"
-        ):
+        if self.ENVIRONMENT != "development" and not self.ENCRYPTION_KEY:
             raise ValueError(
-                "ENCRYPTION_KEY is set to insecure default. "
-                "Set a strong ENCRYPTION_KEY in production."
+                "ENCRYPTION_KEY is empty. "
+                "Set a strong ENCRYPTION_KEY (32-byte Fernet key) in production."
             )
 
 

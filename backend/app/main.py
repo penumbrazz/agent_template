@@ -1,9 +1,9 @@
+import time
 from contextlib import asynccontextmanager
 
 import structlog
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
@@ -16,17 +16,45 @@ from app.core.rate_limit import limiter
 from app.db.seed import seed_default_admin
 from app.db.session import SessionLocal
 
+logger = structlog.get_logger("lifespan")
+
+# DB connection retry parameters for transient startup failures.
+_DB_CONNECT_MAX_ATTEMPTS = 3
+_DB_CONNECT_BASE_DELAY = 0.5
+
+
+def _seed_with_retry() -> None:
+    """Run the default-admin seed with bounded DB-connect retries."""
+    last_error: Exception | None = None
+    for attempt in range(1, _DB_CONNECT_MAX_ATTEMPTS + 1):
+        db = SessionLocal()
+        try:
+            seed_default_admin(db)
+            return
+        except Exception as exc:  # noqa: BLE001 - retry any DB-side error
+            last_error = exc
+            logger.warning(
+                "seed_attempt_failed",
+                attempt=attempt,
+                error=str(exc),
+            )
+            if attempt < _DB_CONNECT_MAX_ATTEMPTS:
+                time.sleep(_DB_CONNECT_BASE_DELAY * (2 ** (attempt - 1)))
+        finally:
+            db.close()
+    # All retries exhausted: log loudly but do not crash the app.
+    logger.error(
+        "seed_failed_after_retries",
+        error=str(last_error) if last_error else "unknown",
+    )
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage application startup and shutdown lifecycle."""
     setup_logging()
-    # Seed default admin user
-    db = SessionLocal()
-    try:
-        seed_default_admin(db)
-    finally:
-        db.close()
+    # Seed default admin user (with bounded DB-connect retries).
+    _seed_with_retry()
     init_error_tracking()
     langfuse = init_langfuse()
     if langfuse:
@@ -34,11 +62,17 @@ async def lifespan(app: FastAPI):
             "langfuse_connected", host=settings.LANGFUSE_HOST
         )
     yield
-    # Shutdown: close shared async http client
+    # Shutdown: close shared async http client and flush OTel traces.
     from app.services.provider import close_http_client
 
     await close_http_client()
     shutdown_langfuse()
+    try:
+        from shared.telemetry.core import shutdown_telemetry
+
+        shutdown_telemetry()
+    except Exception:  # noqa: BLE001 - best-effort cleanup
+        logger.warning("otel_shutdown_failed", exc_info=True)
 
 
 def create_app() -> FastAPI:

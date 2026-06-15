@@ -10,6 +10,9 @@ from app.db.session import get_db
 from app.models.user import User
 from app.schemas.user import TokenWithExpiry, UserCreate, UserLogin, UserRead
 from app.services.auth import (
+    AccountDisabledError,
+    EmailAlreadyRegisteredError,
+    UsernameAlreadyRegisteredError,
     authenticate_user,
     create_access_token,
     create_refresh_token,
@@ -57,11 +60,11 @@ def register(
     """Register a new user account."""
     try:
         return register_user(db, user_in)
+    except UsernameAlreadyRegisteredError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    except EmailAlreadyRegisteredError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except ValueError as e:
-        if "Username" in str(e):
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-        if "Email" in str(e):
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
@@ -76,9 +79,9 @@ def login(
     """Authenticate a user and return JWT tokens."""
     try:
         user = authenticate_user(db, user_in)
+    except AccountDisabledError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
     except ValueError as e:
-        if "disabled" in str(e):
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
     access_token = create_access_token(data={"sub": user.id})
     refresh = create_refresh_token(data={"sub": user.id, "tv": user.token_version})

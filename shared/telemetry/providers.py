@@ -5,8 +5,10 @@ with OTLP exporters for distributed tracing and metrics.
 Includes BusinessContextSpanProcessor for automatic propagation of
 business context (task_id, subtask_id, user_id, user_name) to all spans.
 """
+
 import logging
 from typing import Optional, Sequence
+
 from opentelemetry import metrics, trace
 from opentelemetry.context import Context
 from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
@@ -28,6 +30,7 @@ from opentelemetry.sdk.trace.sampling import (
 from opentelemetry.trace import Link, SpanKind
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 from opentelemetry.util.types import Attributes
+
 logger = logging.getLogger(__name__)
 # Shared set of Redis command span names used by both sampler and processor
 _FILTERED_REDIS_COMMANDS = frozenset(
@@ -68,6 +71,8 @@ _FILTERED_REDIS_COMMANDS = frozenset(
         "SETEX",
     ]
 )
+
+
 class BusinessContextSpanProcessor(SpanProcessor):
     """
     A SpanProcessor that automatically adds business context attributes
@@ -78,6 +83,7 @@ class BusinessContextSpanProcessor(SpanProcessor):
     the business context, making it easy to filter and correlate traces
     by task_id, subtask_id, or user.
     """
+
     def on_start(
         self,
         span: Span,
@@ -89,6 +95,7 @@ class BusinessContextSpanProcessor(SpanProcessor):
         try:
             # Import here to avoid circular imports
             from shared.telemetry.context.span import get_business_context
+
             # Get current business context from ContextVars
             context = get_business_context()
             # Add each attribute to the span
@@ -98,15 +105,20 @@ class BusinessContextSpanProcessor(SpanProcessor):
         except Exception as e:
             # Don't let context propagation errors affect the application
             logger.debug(f"Failed to add business context to span: {e}")
+
     def on_end(self, span: ReadableSpan) -> None:
         """Called when a span is ended. No action needed."""
         pass
+
     def shutdown(self) -> None:
         """Called when the processor is shut down. No action needed."""
         pass
+
     def force_flush(self, timeout_millis: int = 30000) -> bool:
         """Force flush any pending spans. No action needed."""
         return True
+
+
 class FilteringParentBasedSampler(Sampler):
     """
     A custom sampler that filters out internal ASGI spans and Redis spans.
@@ -117,6 +129,7 @@ class FilteringParentBasedSampler(Sampler):
     This significantly reduces trace noise for streaming endpoints like
     /api/chat/stream where each chunk would otherwise create a separate span.
     """
+
     # Span names to filter out (internal ASGI spans)
     FILTERED_SPAN_NAMES = frozenset(
         [
@@ -130,6 +143,7 @@ class FilteringParentBasedSampler(Sampler):
     )
     # Redis command span names (uppercase command names)
     REDIS_COMMANDS = _FILTERED_REDIS_COMMANDS
+
     def __init__(
         self,
         root_sampler: Sampler,
@@ -145,6 +159,7 @@ class FilteringParentBasedSampler(Sampler):
         self._filter_internal_spans = filter_internal_spans
         # Redis filtering configuration from environment
         import os
+
         self._redis_filter_mode = os.getenv(
             "OTEL_REDIS_FILTER_MODE", "websocket"
         ).lower()
@@ -153,6 +168,7 @@ class FilteringParentBasedSampler(Sampler):
         self._redis_slow_threshold_ms = float(
             os.getenv("OTEL_REDIS_SLOW_THRESHOLD_MS", "100")
         )
+
     def should_sample(
         self,
         parent_context: Optional[Context],
@@ -191,6 +207,7 @@ class FilteringParentBasedSampler(Sampler):
             links=links,
             trace_state=trace_state,
         )
+
     def _filter_redis_span(
         self,
         parent_context: Optional[Context],
@@ -258,6 +275,7 @@ class FilteringParentBasedSampler(Sampler):
         if self._redis_filter_mode == "websocket":
             try:
                 from shared.telemetry.context.span import is_websocket_context
+
                 if is_websocket_context():
                     return SamplingResult(
                         decision=Decision.DROP,
@@ -276,6 +294,7 @@ class FilteringParentBasedSampler(Sampler):
             links=links,
             trace_state=trace_state,
         )
+
     def _is_redis_error(self, attributes: Attributes) -> bool:
         """Check if Redis span represents an error."""
         if not attributes:
@@ -290,6 +309,7 @@ class FilteringParentBasedSampler(Sampler):
         if status_code and str(status_code).startswith(("4", "5")):
             return True
         return False
+
     def _is_redis_slow(self, attributes: Attributes) -> bool:
         """Check if Redis span represents a slow query."""
         if not attributes:
@@ -302,76 +322,12 @@ class FilteringParentBasedSampler(Sampler):
             except (ValueError, TypeError):
                 pass
         return False
+
     def get_description(self) -> str:
         """Return a description of this sampler."""
         return f"FilteringParentBasedSampler(root={self._root_sampler.get_description()}, filter_internal={self._filter_internal_spans}, redis_mode={self._redis_filter_mode})"
-class RedisSpanFilteringProcessor(SpanProcessor):
-    """
-    A SpanProcessor that filters Redis spans based on duration and errors.
-    This processor is used when the sampler-based filtering is not sufficient,
-    e.g., when we need to check the actual span duration after it's completed.
-    Configuration via environment variables:
-    - OTEL_REDIS_FILTER_MODE: "all", "errors", "slow", "websocket" (default: "websocket")
-    - OTEL_REDIS_SLOW_THRESHOLD_MS: Slow query threshold in ms (default: 100)
-    """
-    # Redis command span names
-    REDIS_COMMANDS = _FILTERED_REDIS_COMMANDS
-    def __init__(self):
-        """Initialize the Redis filtering processor."""
-        import os
-        self._filter_mode = os.getenv("OTEL_REDIS_FILTER_MODE", "websocket").lower()
-        self._slow_threshold_ms = float(
-            os.getenv("OTEL_REDIS_SLOW_THRESHOLD_MS", "100")
-        )
-    def on_start(
-        self,
-        span: Span,
-        parent_context: Optional[Context] = None,
-    ) -> None:
-        """Called when a span is started. No action needed."""
-        pass
-    def on_end(self, span: ReadableSpan) -> None:
-        """
-        Called when a span is ended.
-        For Redis spans, we update the attributes to mark filtered spans.
-        The actual filtering happens at export time based on these attributes.
-        """
-        if not span.name in self.REDIS_COMMANDS:
-            return
-        # Add filtering metadata to help with backend filtering
-        if self._filter_mode == "slow":
-            # Check duration
-            duration_ms = self._get_span_duration_ms(span)
-            if duration_ms is not None:
-                span.attributes["redis.duration_ms"] = duration_ms
-                span.attributes["redis.is_slow"] = (
-                    duration_ms >= self._slow_threshold_ms
-                )
-        elif self._filter_mode == "errors":
-            span.attributes["redis.filter_mode"] = "errors"
-        elif self._filter_mode == "websocket":
-            try:
-                from shared.telemetry.context.span import is_websocket_context
-                if is_websocket_context():
-                    span.attributes["redis.filtered"] = True
-            except Exception:
-                pass
-    def _get_span_duration_ms(self, span: ReadableSpan) -> Optional[float]:
-        """Get span duration in milliseconds."""
-        try:
-            if span.end_time and span.start_time:
-                # Convert nanoseconds to milliseconds
-                duration_ns = span.end_time - span.start_time
-                return duration_ns / 1_000_000.0
-        except Exception:
-            pass
-        return None
-    def shutdown(self) -> None:
-        """Called when the processor is shut down. No action needed."""
-        pass
-    def force_flush(self, timeout_millis: int = 30000) -> bool:
-        """Force flush any pending spans. No action needed."""
-        return True
+
+
 def init_tracer_provider(
     resource: Resource, otlp_endpoint: str, sampler_ratio: float
 ) -> None:
@@ -433,6 +389,8 @@ def init_tracer_provider(
         f"sampler_ratio: {sampler_ratio}, fail-safe mode enabled, "
         f"business context propagation enabled"
     )
+
+
 def init_meter_provider(resource: Resource, otlp_endpoint: str) -> None:
     """
     Initialize and configure the MeterProvider.
@@ -470,6 +428,8 @@ def init_meter_provider(resource: Resource, otlp_endpoint: str) -> None:
         f"MeterProvider initialized with endpoint: {otlp_endpoint}, "
         f"fail-safe mode enabled"
     )
+
+
 def shutdown_providers() -> None:
     """
     Gracefully shutdown telemetry providers.

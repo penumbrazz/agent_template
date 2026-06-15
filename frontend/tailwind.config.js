@@ -19,7 +19,10 @@ export default {
         'text-primary': withOpacity('--color-text-primary'),
         'text-secondary': withOpacity('--color-text-secondary'),
         'text-muted': withOpacity('--color-text-muted'),
-        primary: withOpacity('--color-primary'),
+        primary: {
+          DEFAULT: withOpacity('--color-primary'),
+          foreground: withOpacity('--color-on-primary'),
+        },
         'primary-active': withOpacity('--color-primary-active'),
         border: withOpacity('--color-border'),
         error: withOpacity('--color-error'),

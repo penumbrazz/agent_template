@@ -6,21 +6,21 @@ NOTE: Imports are lazy-loaded to reduce memory usage when telemetry is disabled.
 Only SpanAttributes, TelemetryEventNames, and SpanNames are imported at module load
 since they are pure Python classes without opentelemetry dependencies.
 """
+
+
 def __getattr__(name: str):
     """Lazy import for telemetry context utilities."""
     # Pure Python classes - can be imported directly
     if name == "SpanAttributes":
         from shared.telemetry.context.attributes import SpanAttributes
+
         return SpanAttributes
     if name in ("TelemetryEventNames", "SpanNames"):
         from shared.telemetry.context.events import SpanNames, TelemetryEventNames
+
         if name == "TelemetryEventNames":
             return TelemetryEventNames
         return SpanNames
-    # Span manager - requires opentelemetry
-    if name == "SpanManager":
-        from shared.telemetry.context.manager import SpanManager
-        return SpanManager
     # Propagation utilities - require opentelemetry
     if name in (
         "TRACE_PARENT_ENV",
@@ -32,6 +32,7 @@ def __getattr__(name: str):
         "restore_trace_context_from_env",
     ):
         from shared.telemetry.context import propagation
+
         return getattr(propagation, name)
     # Span utilities - require opentelemetry (but lazy loaded in span.py)
     span_exports = (
@@ -63,6 +64,7 @@ def __getattr__(name: str):
     )
     if name in span_exports:
         from shared.telemetry.context import span
+
         return getattr(span, name)
     # Large data logging utilities - lazy loaded from large_data.py
     large_data_exports = (
@@ -72,16 +74,17 @@ def __getattr__(name: str):
     )
     if name in large_data_exports:
         from shared.telemetry.context import large_data
+
         return getattr(large_data, name)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
 __all__ = [
     # Attributes
     "SpanAttributes",
     # Event and span names
     "TelemetryEventNames",
     "SpanNames",
-    # Span manager
-    "SpanManager",
     # Span utilities
     "get_current_span",
     "set_span_attributes",

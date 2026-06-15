@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, require_superuser
+from app.api.deps import require_superuser
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.setting import SettingRead, SettingUpdate
@@ -13,9 +13,9 @@ router = APIRouter(prefix="/settings", tags=["settings"])
 @router.get("", response_model=list[SettingRead])
 def get_all_settings(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_superuser),
 ):
-    """List all application settings."""
+    """List all application settings (superuser only)."""
     return list_settings(db)
 
 

@@ -1,3 +1,5 @@
+import asyncio
+import re
 import time
 from typing import Awaitable, Callable, Optional
 
@@ -17,23 +19,42 @@ ANTHROPIC_API_VERSION = "2023-06-01"
 DEFAULT_HTTP_TIMEOUT = 30.0
 VALIDATE_HTTP_TIMEOUT = 15.0
 
+# Concurrency limit for parallel metadata fetches during fetch_models.
+METADATA_FETCH_CONCURRENCY = 6
+
+# Matches the masked format produced by mask_api_key: 4 chars + "..." + 4 chars.
+_MASKED_KEY_PATTERN = re.compile(r"^.{4}\.\.\..{4}$")
+
+_UPDATABLE_PROVIDER_FIELDS = {"name", "type", "base_url"}
+
+
+def _is_masked_key(value: str) -> bool:
+    """Return True if value looks like a masked API key (xxxx...xxxx)."""
+    return bool(_MASKED_KEY_PATTERN.match(value or ""))
+
+
 _async_http_client: Optional[httpx.AsyncClient] = None
+_client_lock = asyncio.Lock()
 
 
-def _get_async_http_client() -> httpx.AsyncClient:
+async def _get_async_http_client() -> httpx.AsyncClient:
     """Return the shared async httpx client, creating one if needed."""
     global _async_http_client
-    if _async_http_client is None or _async_http_client.is_closed:
-        _async_http_client = httpx.AsyncClient(timeout=DEFAULT_HTTP_TIMEOUT)
-    return _async_http_client
+    if _async_http_client is not None and not _async_http_client.is_closed:
+        return _async_http_client
+    async with _client_lock:
+        if _async_http_client is None or _async_http_client.is_closed:
+            _async_http_client = httpx.AsyncClient(timeout=DEFAULT_HTTP_TIMEOUT)
+        return _async_http_client
 
 
 async def close_http_client() -> None:
     """Close the shared async httpx client on shutdown."""
     global _async_http_client
-    if _async_http_client and not _async_http_client.is_closed:
-        await _async_http_client.aclose()
-        _async_http_client = None
+    async with _client_lock:
+        if _async_http_client and not _async_http_client.is_closed:
+            await _async_http_client.aclose()
+            _async_http_client = None
 
 
 def _build_headers(api_key: str, provider_type: str) -> dict[str, str]:
@@ -127,12 +148,15 @@ def update_provider(db: Session, provider: Provider, data: ProviderUpdate) -> Pr
         update_data["type"] = update_data["type"].value
     if "api_key" in update_data:
         raw_key = update_data.pop("api_key")
-        if raw_key and raw_key != mask_api_key(raw_key):
+        # Only overwrite when a real (unmasked) key is provided. Masked values
+        # come straight from the read API and must not be persisted back.
+        if raw_key and not _is_masked_key(raw_key):
             provider.encrypted_api_key = encrypt_api_key(raw_key)
     if "base_url" in update_data and update_data["base_url"]:
         update_data["base_url"] = _normalize_base_url(update_data["base_url"])
     for field, value in update_data.items():
-        setattr(provider, field, value)
+        if field in _UPDATABLE_PROVIDER_FIELDS:
+            setattr(provider, field, value)
     db.commit()
     db.refresh(provider)
     return provider
@@ -145,12 +169,17 @@ def delete_provider(db: Session, provider: Provider) -> None:
 
 
 async def fetch_models(db: Session, provider: Provider) -> list[LLMModel]:
-    """Fetch models from a remote provider and sync with the database."""
+    """Fetch models from a remote provider and sync with the database.
+
+    Metadata fetches are performed concurrently (bounded by a semaphore) and
+    outside the main transaction so a large model catalog does not hold a DB
+    connection for the duration of N sequential HTTP calls.
+    """
     decrypted_key = decrypt_api_key(provider.encrypted_api_key)
     base_url = _normalize_base_url(provider.base_url)
     headers = _build_headers(decrypted_key, provider.type)
 
-    client = _get_async_http_client()
+    client = await _get_async_http_client()
     resp = await client.get(f"{base_url}{_models_path()}", headers=headers)
     resp.raise_for_status()
 
@@ -161,17 +190,38 @@ async def fetch_models(db: Session, provider: Provider) -> list[LLMModel]:
     )
     existing_ids = {m.model_id for m in existing_models}
 
+    # Short transaction 1: delete stale models + clear default if needed.
     for model in existing_models:
         if model.model_id not in remote_ids:
             db.delete(model)
-
     remaining_model_ids = {m.id for m in existing_models if m.model_id in remote_ids}
     clear_default_model_if_unavailable(db, remaining_model_ids)
+    db.commit()
 
+    # Determine which models need metadata fetched.
     new_ids = remote_ids - existing_ids
-    new_models = []
-    for mid in new_ids:
-        metadata = await fetch_model_metadata(client, base_url, headers, mid)
+    incomplete_existing = [
+        m
+        for m in existing_models
+        if m.model_id in remote_ids
+        and (m.context_length is None or m.max_output_tokens is None)
+    ]
+
+    # Concurrent metadata fetch outside the DB transaction.
+    semaphore = asyncio.Semaphore(METADATA_FETCH_CONCURRENCY)
+
+    async def _fetch(mid: str) -> dict:
+        async with semaphore:
+            return await fetch_model_metadata(client, base_url, headers, mid)
+
+    new_metadata_list = await asyncio.gather(*(_fetch(mid) for mid in new_ids))
+    existing_metadata_list = await asyncio.gather(
+        *(_fetch(m.model_id) for m in incomplete_existing)
+    )
+
+    # Short transaction 2: apply fetched metadata.
+    new_models: list[LLMModel] = []
+    for mid, metadata in zip(new_ids, new_metadata_list):
         model = LLMModel(
             provider_id=provider.id,
             model_id=mid,
@@ -183,15 +233,13 @@ async def fetch_models(db: Session, provider: Provider) -> list[LLMModel]:
         db.add(model)
         new_models.append(model)
 
-    for model in existing_models:
-        if model.model_id not in remote_ids:
-            continue
-        if model.context_length is not None and model.max_output_tokens is not None:
-            continue
-        metadata = await fetch_model_metadata(client, base_url, headers, model.model_id)
+    for model, metadata in zip(incomplete_existing, existing_metadata_list):
         if model.context_length is None and metadata["context_length"] is not None:
             model.context_length = metadata["context_length"]
-        if model.max_output_tokens is None and metadata["max_output_tokens"] is not None:
+        if (
+            model.max_output_tokens is None
+            and metadata["max_output_tokens"] is not None
+        ):
             model.max_output_tokens = metadata["max_output_tokens"]
         if model.model_type == "llm":
             model.model_type = metadata["model_type"]
@@ -230,7 +278,7 @@ async def test_provider(
     }
 
     async def make_request():
-        client = _get_async_http_client()
+        client = await _get_async_http_client()
         if provider.type == ProviderType.OPENAI_COMPATIBLE.value:
             resp = await client.post(
                 f"{base_url}/chat/completions", headers=headers, json=chat_payload
@@ -250,7 +298,7 @@ async def validate_provider(base_url: str, api_key: str, provider_type: str) -> 
     headers = _build_headers(api_key, provider_type)
 
     async def make_request():
-        client = _get_async_http_client()
+        client = await _get_async_http_client()
         resp = await client.get(f"{url}{_models_path()}", headers=headers)
         resp.raise_for_status()
 

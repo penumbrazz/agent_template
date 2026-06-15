@@ -10,6 +10,7 @@ import { createExtractorRegistry } from '@/features/selection-context/extractors
 import { extractDomSelection } from '@/features/selection-context/extractors/dom-extractor'
 import { extractTableSelection } from '@/features/selection-context/extractors/table-extractor'
 import { extractEchartsSelection } from '@/features/selection-context/extractors/echarts-extractor'
+import { extractScreenshotSelection } from '@/features/selection-context/extractors/screenshot-extractor'
 import { SelectionOverlay } from '@/features/selection-context/selection-overlay'
 import { useSelectionOverlay } from '@/features/selection-context/use-selection-overlay'
 import type { ChatAttachment } from '@/features/selection-context/types'
@@ -33,24 +34,29 @@ export function AgentChatPanel() {
   const [attachments, setAttachments] = useState<ChatAttachment[]>([])
   const t = useT()
 
-  const extractorRegistry = useMemo(
-    () =>
-      createExtractorRegistry([
-        {
-          kind: 'dom',
-          extract: extractDomSelection,
-        },
-        {
-          kind: 'table',
-          extract: extractTableSelection,
-        },
-        {
-          kind: 'chart',
-          extract: extractEchartsSelection,
-        },
-      ]),
-    [],
-  )
+  const extractorRegistry = useMemo(() => {
+    const screenshotDelivery =
+      getRuntimeConfigSync().selectionContextPolicy.screenshotDelivery
+    return createExtractorRegistry([
+      {
+        kind: 'dom',
+        extract: extractDomSelection,
+      },
+      {
+        kind: 'table',
+        extract: extractTableSelection,
+      },
+      {
+        kind: 'chart',
+        extract: extractEchartsSelection,
+      },
+      {
+        kind: 'screenshot',
+        extract: (geometry) =>
+          extractScreenshotSelection(geometry, screenshotDelivery),
+      },
+    ])
+  }, [])
 
   const {
     sessions,
@@ -136,7 +142,7 @@ export function AgentChatPanel() {
         className={cn(
           'fixed right-6 bottom-6 z-40',
           'flex items-center gap-2 rounded-full',
-          'bg-primary px-4 min-h-[44px] text-sm font-medium text-white',
+          'bg-primary px-4 min-h-[44px] text-sm font-medium text-on-primary',
           'shadow-[0_1px_3px_rgba(20,20,19,0.08)] hover:bg-primary-active transition-colors',
         )}
       >

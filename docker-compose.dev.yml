@@ -1,6 +1,19 @@
 # Development overrides - extends docker-compose.yml
 # Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+#
+# - Exposes PostgreSQL (5432) and Redis (6379) on localhost for debugging
+#   with external tools (DBeaver, TablePlus, redis-cli, etc.).
+# - Mounts backend/frontend source for hot reload.
+
 services:
+  postgres:
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+
+  redis:
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+
   backend:
     build:
       context: ./backend

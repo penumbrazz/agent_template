@@ -30,6 +30,7 @@ export function AttachmentChip({ attachment, onRemove }: AttachmentChipProps) {
     <div
       data-testid="agent-chat-attachment-chip"
       className="flex max-w-full items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5 text-xs text-text-primary"
+      data-attachment-kind={attachment.artifact.kind}
     >
       <AttachmentIcon kind={attachment.artifact.kind} />
       <span className="truncate">{attachment.label}</span>

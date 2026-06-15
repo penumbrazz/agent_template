@@ -1,4 +1,50 @@
+# Agent Template - Application Stack
+# Usage: docker compose up
+#
+# This file defines the application services plus the required infrastructure
+# (PostgreSQL, Redis) that the backend depends on at startup.
+#
+# OpenTelemetry is intentionally NOT included here. The telemetry stack lives
+# in telemetry/docker-compose.yml and must be started separately. When OTEL
+# is disabled (default), the backend will not attempt to reach any collector,
+# so a missing otel-collector will not crash the process.
+
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: agent-template-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-agent_template}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-agent_template}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - agent-template-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: agent-template-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - agent-template-network
+
   backend:
     build:
       context: .
@@ -9,8 +55,19 @@ services:
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     environment:
+      # Override defaults so the container resolves sibling services by name.
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-agent_template}
+      REDIS_URL: redis://redis:6379/0
       OTEL_SERVICE_NAME: agent-template-backend
+      # OTEL is disabled by default; flip OTEL_ENABLED=true only after starting
+      # the telemetry stack (cd telemetry && docker compose up -d).
+      OTEL_ENABLED: ${OTEL_ENABLED:-false}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - agent-template-network
 
@@ -30,6 +87,12 @@ services:
       - backend
     networks:
       - agent-template-network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
 
 networks:
   agent-template-network:

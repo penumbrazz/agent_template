@@ -62,11 +62,22 @@ def create_model(db: Session, data: ModelCreate) -> LLMModel:
     return model
 
 
+_UPDATABLE_MODEL_FIELDS = {
+    "model_id",
+    "display_name",
+    "extra_config",
+    "model_type",
+    "context_length",
+    "max_output_tokens",
+}
+
+
 def update_model(db: Session, model: LLMModel, data: ModelUpdate) -> LLMModel:
     """Update a model's fields from partial update data."""
     update_data = data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
-        setattr(model, field, value)
+        if field in _UPDATABLE_MODEL_FIELDS:
+            setattr(model, field, value)
     db.commit()
     db.refresh(model)
     return model

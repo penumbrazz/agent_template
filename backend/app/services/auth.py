@@ -12,6 +12,18 @@ from app.schemas.user import UserCreate, UserLogin
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
+class UsernameAlreadyRegisteredError(ValueError):
+    """Raised when a username is already taken during registration."""
+
+
+class EmailAlreadyRegisteredError(ValueError):
+    """Raised when an email is already registered during registration."""
+
+
+class AccountDisabledError(ValueError):
+    """Raised when a disabled user attempts to authenticate."""
+
+
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a plain-text password against a bcrypt hash."""
     return pwd_context.verify(plain_password, hashed_password)
@@ -81,10 +93,10 @@ def register_user(db: Session, user_in: UserCreate) -> User:
     """
     existing = db.query(User).filter(User.username == user_in.username).first()
     if existing:
-        raise ValueError("Username already registered")
+        raise UsernameAlreadyRegisteredError("Username already registered")
     existing = db.query(User).filter(User.email == user_in.email).first()
     if existing:
-        raise ValueError("Email already registered")
+        raise EmailAlreadyRegisteredError("Email already registered")
     user = User(
         username=user_in.username,
         email=user_in.email,
@@ -113,7 +125,7 @@ def authenticate_user(db: Session, user_in: UserLogin) -> User:
     if not user or not verify_password(user_in.password, user.hashed_password):
         raise ValueError("Incorrect username or password")
     if not user.is_active:
-        raise ValueError("User account is disabled")
+        raise AccountDisabledError("User account is disabled")
     return user
 
 

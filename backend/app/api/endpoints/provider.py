@@ -1,3 +1,4 @@
+import structlog
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -25,6 +26,8 @@ from app.services.provider import (
     validate_provider,
 )
 
+logger = structlog.get_logger("provider_endpoint")
+
 router = APIRouter(prefix="/providers", tags=["providers"])
 
 
@@ -34,7 +37,9 @@ async def validate_provider_endpoint(
     current_user: User = Depends(require_superuser),
 ):
     """Validate provider credentials without creating."""
-    result = await validate_provider(data.base_url, data.api_key, data.provider_type.value)
+    result = await validate_provider(
+        data.base_url, data.api_key, data.provider_type.value
+    )
     return result
 
 
@@ -105,10 +110,15 @@ async def fetch_provider_models(
         )
     try:
         new_models = await fetch_models(db, provider)
-    except Exception as e:
+    except Exception:
+        logger.error(
+            "fetch_models_failed",
+            provider_id=provider_id,
+            exc_info=True,
+        )
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Failed to fetch models: {str(e)}",
+            detail="Failed to fetch models",
         )
     return {
         "fetched": len(new_models),

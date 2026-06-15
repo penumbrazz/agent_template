@@ -10,6 +10,7 @@
     "format": "prettier --write .",
     "test": "jest",
     "test:watch": "jest --watch",
+    "i18n:check": "npx tsx src/i18n/check-parity.ts",
     "e2e": "playwright test",
     "prepare": "cd .. && husky frontend/.husky"
   },

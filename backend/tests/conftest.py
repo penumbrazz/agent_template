@@ -1,3 +1,12 @@
+import asyncio
+import os
+
+# Stable encryption key for the test suite. crypto utils read ENCRYPTION_KEY
+# from the environment; without this, provider/seed tests would raise at import
+# time. Real deployments must set a strong ENCRYPTION_KEY explicitly — this
+# value only affects pytest.
+os.environ.setdefault("ENCRYPTION_KEY", "0123456789abcdef0123456789abcdef")
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -31,10 +40,12 @@ def setup_db():
     import app.services.provider as provider_module
 
     provider_module._async_http_client = None
+    provider_module._client_lock = asyncio.Lock()
     Base.metadata.create_all(bind=engine)
     limiter.reset()
     yield
     provider_module._async_http_client = None
+    provider_module._client_lock = asyncio.Lock()
     Base.metadata.drop_all(bind=engine)
     limiter.reset()
 

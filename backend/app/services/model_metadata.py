@@ -7,7 +7,17 @@ logger = logging.getLogger(__name__)
 
 _EMBEDDING_KEYWORDS = ("embed", "bge-", "e5-", "text-embedding", "dpr")
 _RERANK_KEYWORDS = ("rerank", "reranker", "cross-encoder")
-_VLM_KEYWORDS = ("vl-", "vlm", "vision", "visual", "qwen2-vl", "internvl", "cogvlm", "llava", "minicpm-v")
+_VLM_KEYWORDS = (
+    "vl-",
+    "vlm",
+    "vision",
+    "visual",
+    "qwen2-vl",
+    "internvl",
+    "cogvlm",
+    "llava",
+    "minicpm-v",
+)
 
 
 def infer_model_type(model_id: str) -> str:
@@ -42,7 +52,12 @@ async def fetch_model_metadata(
         meta = data.get("meta", {}) or {}
         model_info = meta.get("model_info", {}) or data
 
-        for field in ("max_model_len", "max_position_embeddings", "context_length", "max_context_length"):
+        for field in (
+            "max_model_len",
+            "max_position_embeddings",
+            "context_length",
+            "max_context_length",
+        ):
             val = model_info.get(field)
             if val is not None:
                 result["context_length"] = int(val)
@@ -53,7 +68,7 @@ async def fetch_model_metadata(
             if val is not None:
                 result["max_output_tokens"] = int(val)
                 break
-    except Exception:
-        logger.debug("Failed to fetch metadata for model %s", model_id, exc_info=True)
+    except (httpx.HTTPError, httpx.TimeoutException, ValueError, KeyError):
+        logger.warning("Failed to fetch metadata for model %s", model_id, exc_info=True)
 
     return result

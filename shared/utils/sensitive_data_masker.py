@@ -7,10 +7,14 @@ This module provides functionality to detect and mask sensitive data such as:
 - JWT tokens
 - Environment variable values containing sensitive data
 """
+
 import re
 from typing import Any, Dict, List, Optional, Union
+
+
 class SensitiveDataMasker:
     """Utility class for masking sensitive information in strings and data structures."""
+
     # Patterns for detecting sensitive data
     SENSITIVE_PATTERNS = [
         # API Keys and Tokens
@@ -31,14 +35,22 @@ class SensitiveDataMasker:
             r'(secret[_-]?(?:access[_-]?)?key["\s:=]+)([a-zA-Z0-9/+=]{40})\b',
             "AWS_SECRET_KEY",
         ),
-        # Generic tokens and secrets
+        # Generic tokens and secrets.
+        # These are heuristic patterns applied to free text, so the captured value
+        # must look like a credential (high entropy / sufficient length) to avoid
+        # masking ordinary prose such as "the token is abc123" or "I have a secret
+        # plan". ``mask_string`` gates these labels through
+        # ``_looks_like_credential`` before masking; see that helper for the
+        # canonical heuristic.
         (r'(token["\s:=]+)([a-zA-Z0-9_\-\.]+)', "TOKEN"),
         (r'(secret["\s:=]+)([a-zA-Z0-9_\-\.]+)', "SECRET"),
         (r'(api[_-]?key["\s:=]+)([a-zA-Z0-9_\-\.]+)', "API_KEY"),
         (r'(auth[_-]?token["\s:=]+)([a-zA-Z0-9_\-\.]+)', "AUTH_TOKEN"),
         # JWT Tokens
         (r"(eyJ[a-zA-Z0-9_-]+\.eyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+)", "JWT_TOKEN"),
-        # Passwords
+        # Passwords. Same entropy heuristic applies: short dictionary words such
+        # as "hello" must not be masked, real passwords (>=8 chars or complex)
+        # still are.
         (r'(password["\s:=]+)([^\s"\']+)', "PASSWORD"),
         (r'(passwd["\s:=]+)([^\s"\']+)', "PASSWORD"),
         (r'(pwd["\s:=]+)([^\s"\']+)', "PASSWORD"),
@@ -52,15 +64,23 @@ class SensitiveDataMasker:
             "PRIVATE_KEY",
         ),
     ]
-    # Environment variable patterns that contain sensitive data
-    # Using more specific patterns to avoid false positives
+    # Environment variable name substrings that indicate a sensitive value.
+    # Narrower than the previous list: generic suffixes such as ``_KEY`` or
+    # ``_AUTH`` caused false positives on names like ``MONKEY_KEY`` or
+    # ``GRAPH_AUTH_TYPE``. Only specific, well-known credential-bearing suffixes
+    # are kept so that structured keys remain precise.
     SENSITIVE_ENV_VARS = [
         "_TOKEN",
-        "_KEY",
+        "API_KEY",
+        "SECRET_KEY",
+        "ACCESS_KEY",
+        "PRIVATE_KEY",
+        "PUBLIC_KEY",
         "PASSWORD",
         "PASSWD",
         "_SECRET",
-        "_AUTH",
+        "_AUTH_TOKEN",
+        "AUTHORIZATION",
         "CREDENTIAL",
         "DATABASE_URL",
         "DB_URL",
@@ -87,6 +107,7 @@ class SensitiveDataMasker:
         "PORT_",
         "_URL",
     ]
+
     def __init__(
         self, mask_char: str = "*", show_prefix_len: int = 4, show_suffix_len: int = 4
     ):
@@ -105,6 +126,7 @@ class SensitiveDataMasker:
             (re.compile(pattern, re.IGNORECASE | re.MULTILINE), label)
             for pattern, label in self.SENSITIVE_PATTERNS
         ]
+
     def _mask_value(self, value: str, min_length: int = 8) -> str:
         """
         Mask a sensitive value, showing only prefix and suffix.
@@ -122,6 +144,39 @@ class SensitiveDataMasker:
         suffix = value[-self.show_suffix_len :]
         masked_middle = self.mask_char * 12  # Fixed length for consistency
         return f"{prefix}{masked_middle}{suffix}"
+
+    @staticmethod
+    def _looks_like_credential(value: str) -> bool:
+        """Heuristic check for whether a free-text captured value looks like a credential.
+
+        Free-text patterns such as ``token=...`` or ``the secret is ...`` are
+        inherently ambiguous: a sentence like ``the token is abc123`` matches the
+        same shape as ``token: eyJhbGciOi...``. To avoid masking ordinary prose,
+        we only treat the captured value as sensitive when it exhibits enough
+        complexity:
+
+        - Very long values (>=32 chars) are always treated as credentials.
+        - Medium values (>=20 chars) that mix letters and digits are credentials.
+        - Shorter values (>=8 chars) must combine uppercase, lowercase and digits
+          to count (a strong indicator of an opaque token).
+
+        Short dictionary words (``abc123``, ``hello``, ``plan``) and trivially
+        short strings never match.
+        """
+        if not value:
+            return False
+        has_upper = any(c.isupper() for c in value)
+        has_lower = any(c.islower() for c in value)
+        has_digit = any(c.isdigit() for c in value)
+        length = len(value)
+        if length >= 32:
+            return True
+        if length >= 20 and has_lower and has_digit:
+            return True
+        if length >= 8 and has_upper and has_lower and has_digit:
+            return True
+        return False
+
     def mask_string(self, text: str) -> str:
         """
         Mask sensitive data in a string.
@@ -133,8 +188,21 @@ class SensitiveDataMasker:
         if not text or not isinstance(text, str):
             return text
         masked_text = text
+        # Labels whose patterns are heuristic free-text matches. For these we
+        # require the captured value to look like a real credential before
+        # masking it, otherwise ordinary sentences get clobbered.
+        # (Format-anchored patterns such as ``sk-...`` or JWT keep their own
+        # validation and are intentionally excluded here.)
+        heuristic_labels = {
+            "TOKEN",
+            "SECRET",
+            "API_KEY",
+            "AUTH_TOKEN",
+            "PASSWORD",
+        }
         # Apply all patterns
         for pattern, label in self.compiled_patterns:
+
             def replace_match(match):
                 # Handle different group patterns
                 if len(match.groups()) == 1:
@@ -144,6 +212,12 @@ class SensitiveDataMasker:
                     # Two groups: first is context, second is sensitive value
                     prefix = match.group(1) if match.group(1) else ""
                     sensitive_value = match.group(2)
+                    if label in heuristic_labels and not self._looks_like_credential(
+                        sensitive_value
+                    ):
+                        # Don't mask low-entropy words that merely follow a
+                        # sensitive-looking keyword in free text.
+                        return match.group(0)
                     masked_value = self._mask_value(sensitive_value)
                     return f"{prefix}{masked_value}"
                 elif len(match.groups()) >= 3:
@@ -154,10 +228,12 @@ class SensitiveDataMasker:
                     suffix = match.group(3) if match.group(3) else ""
                     return f"{prefix}{masked_value}{suffix}"
                 return match.group(0)
+
             masked_text = pattern.sub(replace_match, masked_text)
         # Special handling for export statements with sensitive vars
         masked_text = self._mask_export_statements(masked_text)
         return masked_text
+
     def _mask_export_statements(self, text: str) -> str:
         """
         Mask values in export statements that contain sensitive environment variables.
@@ -171,6 +247,7 @@ class SensitiveDataMasker:
             r'(export\s+)([A-Z_][A-Z0-9_]*)(=)(["\']?)([^"\'\s]+)(["\']?)',
             re.IGNORECASE,
         )
+
         def replace_export(match):
             keyword = match.group(1)  # "export "
             var_name = match.group(2)  # Variable name
@@ -196,7 +273,9 @@ class SensitiveDataMasker:
                     f"{keyword}{var_name}{equals}{quote_start}{masked_value}{quote_end}"
                 )
             return match.group(0)
+
         return export_pattern.sub(replace_export, text)
+
     def mask_dict(self, data: Dict[str, Any], recursive: bool = True) -> Dict[str, Any]:
         """
         Mask sensitive data in a dictionary.
@@ -234,6 +313,7 @@ class SensitiveDataMasker:
             else:
                 masked_data[key] = value
         return masked_data
+
     def mask_list(self, data: List[Any], recursive: bool = True) -> List[Any]:
         """
         Mask sensitive data in a list.
@@ -256,6 +336,7 @@ class SensitiveDataMasker:
             else:
                 masked_list.append(item)
         return masked_list
+
     def mask_any(self, data: Any, recursive: bool = True) -> Any:
         """
         Automatically detect and mask sensitive data in any data type.
@@ -273,8 +354,12 @@ class SensitiveDataMasker:
             return self.mask_list(data, recursive=recursive)
         else:
             return data
+
+
 # Global singleton instance
 _default_masker = SensitiveDataMasker()
+
+
 def mask_sensitive_data(data: Any, recursive: bool = True) -> Any:
     """
     Convenience function to mask sensitive data using the default masker.
@@ -285,6 +370,8 @@ def mask_sensitive_data(data: Any, recursive: bool = True) -> Any:
         Data with sensitive information masked
     """
     return _default_masker.mask_any(data, recursive=recursive)
+
+
 def mask_string(text: str) -> str:
     """
     Convenience function to mask sensitive data in a string.
