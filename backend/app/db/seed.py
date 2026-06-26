@@ -9,7 +9,7 @@ logger = structlog.get_logger("seed")
 
 DEFAULT_ADMIN_USERNAME = "admin"
 DEFAULT_ADMIN_PASSWORD = "admin"
-DEFAULT_ADMIN_EMAIL = "admin@localhost"
+DEFAULT_ADMIN_EMAIL = "admin@example.com"
 
 
 def _resolve_admin_password() -> str | None:
